@@ -1,5 +1,6 @@
 import { useUser } from "@/context/SessionProvider";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate } from "react-router-dom";
+import Layout from "./Layout";
 
 export const ProtectedRoute = () => {
   const { session, isLoading } = useUser();
@@ -12,5 +13,5 @@ export const ProtectedRoute = () => {
     return <Navigate to="/login" replace />;
   }
 
-  return <Outlet />;
+  return <Layout />;
 };
