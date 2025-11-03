@@ -4,13 +4,11 @@ import { Pedido } from "./KanbanCard";
 import {
   DndContext,
   DragEndEvent,
-  DragOverEvent,
   DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { arrayMove } from "@dnd-kit/sortable";
 import { KanbanColumn } from "./KanbanColumn";
 import { showError } from "@/utils/toast";
 
@@ -69,9 +67,8 @@ export const KanbanBoard = () => {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'pedidos' },
-        (payload) => {
-          console.log('Change received!', payload);
-          fetchPedidos(); // Simplesmente busca todos os dados novamente para garantir a consistência
+        () => {
+          fetchPedidos();
         }
       )
       .subscribe();
@@ -91,23 +88,37 @@ export const KanbanBoard = () => {
     const { active, over } = event;
     setActivePedido(null);
 
-    if (!over || active.id === over.id) return;
+    if (!over) return;
 
-    const originalStatus = active.data.current?.pedido.status as PedidoStatus;
+    const originalStatus = active.data.current?.sortable.containerId as PedidoStatus;
     const newStatus = over.id as PedidoStatus;
+    
+    if (!originalStatus || originalStatus === newStatus) {
+      return;
+    }
+
     const pedidoId = active.id as string;
+    
+    const originalPedidosState = JSON.parse(JSON.stringify(pedidos));
 
-    if (originalStatus === newStatus) return;
+    setPedidos(currentPedidos => {
+      const sourceColumn = currentPedidos[originalStatus];
+      const destinationColumn = currentPedidos[newStatus];
 
-    // Optimistic update
-    const originalPedidos = { ...pedidos };
-    const updatedPedidos = { ...pedidos };
-    const [movedPedido] = updatedPedidos[originalStatus].filter(p => p.id === pedidoId);
-    updatedPedidos[originalStatus] = updatedPedidos[originalStatus].filter(p => p.id !== pedidoId);
-    updatedPedidos[newStatus].push(movedPedido);
-    setPedidos(updatedPedidos);
+      const activeIndex = sourceColumn.findIndex(p => p.id === pedidoId);
+      if (activeIndex === -1) return currentPedidos;
 
-    // Update database
+      const [movedItem] = sourceColumn.splice(activeIndex, 1);
+      movedItem.status = newStatus;
+      destinationColumn.push(movedItem);
+
+      return {
+        ...currentPedidos,
+        [originalStatus]: [...sourceColumn],
+        [newStatus]: [...destinationColumn],
+      };
+    });
+
     const { error } = await supabase
       .from('pedidos')
       .update({ status: newStatus })
@@ -115,8 +126,8 @@ export const KanbanBoard = () => {
 
     if (error) {
       showError("Falha ao atualizar o status do pedido.");
-      // Revert UI on error
-      setPedidos(originalPedidos);
+      console.error("Supabase update error:", error);
+      setPedidos(originalPedidosState);
     }
   };
 
