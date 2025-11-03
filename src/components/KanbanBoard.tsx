@@ -11,17 +11,19 @@ import {
 } from "@dnd-kit/core";
 import { KanbanColumn } from "./KanbanColumn";
 import { showError } from "@/utils/toast";
+import { useUser, UserProfile } from "@/context/SessionProvider";
 
 type PedidoStatus = 'pendente' | 'em_rota' | 'entregue';
 type PedidosPorStatus = Record<PedidoStatus, Pedido[]>;
 
 export const KanbanBoard = () => {
+  const { profile } = useUser();
   const [pedidos, setPedidos] = useState<PedidosPorStatus>({
     pendente: [],
     em_rota: [],
     entregue: [],
   });
-  const [activePedido, setActivePedido] = useState<Pedido | null>(null);
+  const [entregadores, setEntregadores] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,90 +35,89 @@ export const KanbanBoard = () => {
     })
   );
 
-  useEffect(() => {
-    const fetchPedidos = async () => {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from("pedidos")
-          .select("*")
-          .order("criado_em", { ascending: true });
+  const fetchPedidos = async () => {
+    try {
+      setLoading(true);
+      // RLS garante que cada usuário veja apenas os pedidos permitidos
+      const { data, error } = await supabase
+        .from("pedidos")
+        .select("*, entregador:profiles(id, full_name)")
+        .order("criado_em", { ascending: true });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        const pedidosPorStatus = (data || []).reduce<PedidosPorStatus>(
-          (acc, pedido) => {
-            acc[pedido.status as PedidoStatus].push(pedido);
-            return acc;
-          },
-          { pendente: [], em_rota: [], entregue: [] }
-        );
-        setPedidos(pedidosPorStatus);
-      } catch (err: any) {
-        setError("Falha ao buscar os pedidos.");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPedidos();
-
-    const channel = supabase
-      .channel('public:pedidos')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'pedidos' },
-        () => {
-          fetchPedidos();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const handleDragStart = (event: DragStartEvent) => {
-    if (event.active.data.current?.pedido) {
-      setActivePedido(event.active.data.current.pedido);
+      const pedidosPorStatus = (data || []).reduce<PedidosPorStatus>(
+        (acc, pedido) => {
+          acc[pedido.status as PedidoStatus].push(pedido as Pedido);
+          return acc;
+        },
+        { pendente: [], em_rota: [], entregue: [] }
+      );
+      setPedidos(pedidosPorStatus);
+    } catch (err: any) {
+      setError("Falha ao buscar os pedidos.");
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (profile) {
+      fetchPedidos();
+
+      // Admins e Gestores podem ver a lista de entregadores para atribuir pedidos
+      if (profile.role === 'admin' || profile.role === 'gestor') {
+        const fetchEntregadores = async () => {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('role', 'entregador');
+          if (error) console.error("Error fetching entregadores:", error);
+          else setEntregadores(data || []);
+        };
+        fetchEntregadores();
+      }
+
+      const channel = supabase
+        .channel('public:pedidos')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'pedidos' },
+          () => {
+            fetchPedidos();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [profile]);
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    setActivePedido(null);
-
     if (!over) return;
 
     const originalStatus = active.data.current?.sortable.containerId as PedidoStatus;
     const newStatus = over.id as PedidoStatus;
     
-    if (!originalStatus || originalStatus === newStatus) {
-      return;
-    }
+    if (!originalStatus || originalStatus === newStatus) return;
 
     const pedidoId = active.id as string;
     
+    // Otimistic update
     const originalPedidosState = JSON.parse(JSON.stringify(pedidos));
-
     setPedidos(currentPedidos => {
       const sourceColumn = currentPedidos[originalStatus];
-      const destinationColumn = currentPedidos[newStatus];
-
+      const destColumn = currentPedidos[newStatus];
       const activeIndex = sourceColumn.findIndex(p => p.id === pedidoId);
       if (activeIndex === -1) return currentPedidos;
-
       const [movedItem] = sourceColumn.splice(activeIndex, 1);
       movedItem.status = newStatus;
-      destinationColumn.push(movedItem);
-
-      return {
-        ...currentPedidos,
-        [originalStatus]: [...sourceColumn],
-        [newStatus]: [...destinationColumn],
-      };
+      destColumn.push(movedItem);
+      return { ...currentPedidos, [originalStatus]: sourceColumn, [newStatus]: destColumn };
     });
 
     const { error } = await supabase
@@ -127,7 +128,7 @@ export const KanbanBoard = () => {
     if (error) {
       showError("Falha ao atualizar o status do pedido.");
       console.error("Supabase update error:", error);
-      setPedidos(originalPedidosState);
+      setPedidos(originalPedidosState); // Revert on error
     }
   };
 
@@ -135,15 +136,11 @@ export const KanbanBoard = () => {
   if (error) return <div className="text-center p-8 text-red-500">{error}</div>;
 
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 md:p-8">
-        <KanbanColumn id="pendente" title="Pendente" pedidos={pedidos.pendente} />
-        <KanbanColumn id="em_rota" title="Em Rota de Entrega" pedidos={pedidos.em_rota} />
-        <KanbanColumn id="entregue" title="Entregue" pedidos={pedidos.entregue} />
+        <KanbanColumn id="pendente" title="Pendente" pedidos={pedidos.pendente} entregadores={entregadores} />
+        <KanbanColumn id="em_rota" title="Em Rota de Entrega" pedidos={pedidos.em_rota} entregadores={entregadores} />
+        <KanbanColumn id="entregue" title="Entregue" pedidos={pedidos.entregue} entregadores={entregadores} />
       </div>
     </DndContext>
   );

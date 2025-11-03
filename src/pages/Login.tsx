@@ -1,12 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
-import { useSession } from "@/context/SessionProvider";
+import { useUser } from "@/context/SessionProvider";
 import { Navigate } from "react-router-dom";
 import { useEffect } from "react";
 
 const Login = () => {
-  const { session, isLoading } = useSession();
+  const { session, isLoading } = useUser();
 
   useEffect(() => {
     document.body.style.backgroundColor = "#f3f4f6";

@@ -2,14 +2,16 @@ import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { KanbanCard, Pedido } from "./KanbanCard";
 import { SortableKanbanCard } from "./SortableKanbanCard";
+import { UserProfile } from "@/context/SessionProvider";
 
 interface KanbanColumnProps {
   id: string;
   title: string;
   pedidos: Pedido[];
+  entregadores: UserProfile[];
 }
 
-export const KanbanColumn = ({ id, title, pedidos }: KanbanColumnProps) => {
+export const KanbanColumn = ({ id, title, pedidos, entregadores }: KanbanColumnProps) => {
   const { setNodeRef } = useDroppable({ id });
 
   return (
@@ -24,7 +26,7 @@ export const KanbanColumn = ({ id, title, pedidos }: KanbanColumnProps) => {
       >
         <div ref={setNodeRef} className="flex-grow min-h-[100px]">
           {pedidos.map((pedido) => (
-            <SortableKanbanCard key={pedido.id} pedido={pedido} />
+            <SortableKanbanCard key={pedido.id} pedido={pedido} entregadores={entregadores} />
           ))}
         </div>
       </SortableContext>

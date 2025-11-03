@@ -1,47 +1,82 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { Session } from '@supabase/supabase-js';
+import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-interface SessionContextType {
+// Definindo o tipo para o perfil do usuário
+export interface UserProfile {
+  id: string;
+  full_name: string;
+  avatar_url: string;
+  role: 'admin' | 'gestor' | 'entregador';
+}
+
+interface UserContextType {
   session: Session | null;
+  profile: UserProfile | null;
   isLoading: boolean;
 }
 
-const SessionContext = createContext<SessionContextType | undefined>(undefined);
+const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const getSession = async () => {
+    const fetchData = async () => {
+      setIsLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
+
+      if (session?.user) {
+        const { data: userProfile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (error) {
+          console.error("Error fetching profile:", error);
+        } else {
+          setProfile(userProfile);
+        }
+      }
       setIsLoading(false);
     };
 
-    getSession();
+    fetchData();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
+      if (session?.user) {
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        setProfile(userProfile);
+      } else {
+        setProfile(null);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const value = { session, isLoading };
+  const value = { session, profile, isLoading };
 
   return (
-    <SessionContext.Provider value={value}>
+    <UserContext.Provider value={value}>
       {children}
-    </SessionContext.Provider>
+    </UserContext.Provider>
   );
 };
 
-export const useSession = () => {
-  const context = useContext(SessionContext);
+export const useUser = () => {
+  const context = useContext(UserContext);
   if (context === undefined) {
-    throw new Error('useSession must be used within a SessionProvider');
+    throw new Error('useUser must be used within a SessionProvider');
   }
   return context;
 };

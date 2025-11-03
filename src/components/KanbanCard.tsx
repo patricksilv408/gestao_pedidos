@@ -2,7 +2,28 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, differenceInHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { User, MapPin } from "lucide-react";
+import { User, MapPin, Trash2, UserPlus } from "lucide-react";
+import { useUser, UserProfile } from "@/context/SessionProvider";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { showSuccess, showError } from "@/utils/toast";
 
 export type Pedido = {
   id: string;
@@ -14,18 +35,22 @@ export type Pedido = {
   origem: 'ia_n8n' | 'manual' | 'api_externa';
   data_ultima_atualizacao: string;
   numero_vale: number | null;
-  entregador: string | null;
+  entregador: { id: string; full_name: string } | null; // Alterado para objeto
   empresa: string | null;
   latitude: number | null;
   longitude: number | null;
   bairro: string | null;
+  entregador_id: string | null;
 };
 
 interface KanbanCardProps {
   pedido: Pedido;
+  entregadores: UserProfile[];
 }
 
-export const KanbanCard = ({ pedido }: KanbanCardProps) => {
+export const KanbanCard = ({ pedido, entregadores }: KanbanCardProps) => {
+  const { profile } = useUser();
+
   const tempoDecorrido = formatDistanceToNow(new Date(pedido.criado_em), {
     addSuffix: true,
     locale: ptBR,
@@ -34,20 +59,69 @@ export const KanbanCard = ({ pedido }: KanbanCardProps) => {
   const horasDesdeCriacao = differenceInHours(new Date(), new Date(pedido.criado_em));
   const isDelayed = horasDesdeCriacao > 24 && pedido.status !== 'entregue';
 
+  const handleDelete = async () => {
+    const { error } = await supabase.from('pedidos').delete().eq('id', pedido.id);
+    if (error) {
+      showError("Falha ao deletar o pedido.");
+      console.error(error);
+    } else {
+      showSuccess("Pedido deletado com sucesso.");
+    }
+  };
+
+  const handleAssign = async (entregadorId: string) => {
+    const { error } = await supabase
+      .from('pedidos')
+      .update({ entregador_id: entregadorId })
+      .eq('id', pedido.id);
+    
+    if (error) {
+      showError("Falha ao atribuir entregador.");
+      console.error(error);
+    } else {
+      showSuccess("Entregador atribuído com sucesso.");
+    }
+  };
+
   return (
     <Card className={cn("mb-4", isDelayed && "border-red-500 border-2")}>
       <CardHeader>
-        <CardTitle>{pedido.cliente_nome}</CardTitle>
-        <CardDescription>{pedido.cliente_telefone}</CardDescription>
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle>{pedido.cliente_nome}</CardTitle>
+            <CardDescription>{pedido.cliente_telefone}</CardDescription>
+          </div>
+          {profile?.role === 'admin' && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button className="text-gray-400 hover:text-red-500 transition-colors">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. Isso irá deletar permanentemente o pedido.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                    Deletar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-2 text-sm text-gray-600 mb-4">
-          {pedido.entregador && (
-            <div className="flex items-center">
-              <User className="w-4 h-4 mr-2 flex-shrink-0" />
-              <span>{pedido.entregador}</span>
-            </div>
-          )}
+          <div className="flex items-center">
+            <User className="w-4 h-4 mr-2 flex-shrink-0" />
+            <span>{pedido.entregador?.full_name || "Não atribuído"}</span>
+          </div>
           {pedido.bairro && (
             <div className="flex items-center">
               <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
@@ -55,6 +129,24 @@ export const KanbanCard = ({ pedido }: KanbanCardProps) => {
             </div>
           )}
         </div>
+
+        {(profile?.role === 'admin' || profile?.role === 'gestor') && (
+          <div className="mb-4">
+            <Select onValueChange={handleAssign} defaultValue={pedido.entregador_id || ""}>
+              <SelectTrigger>
+                <UserPlus className="w-4 h-4 mr-2 text-gray-500" />
+                <SelectValue placeholder="Atribuir entregador" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Desatribuir</SelectItem>
+                {entregadores.map(e => (
+                  <SelectItem key={e.id} value={e.id}>{e.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <div className="mb-4">
           <p className="text-sm font-medium text-gray-600">Detalhes do Pedido:</p>
           <div className="p-2 mt-1 bg-gray-50 rounded-md text-sm text-gray-800 whitespace-pre-wrap">
