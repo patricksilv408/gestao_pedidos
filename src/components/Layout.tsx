@@ -8,6 +8,7 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarInset,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -21,6 +22,7 @@ import { useUser } from "@/context/SessionProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { LayoutGrid, LogOut, Users } from "lucide-react";
 import { Link, Outlet } from "react-router-dom";
+import { NewOrderDialog } from "./NewOrderDialog";
 
 const Layout = () => {
   const { profile } = useUser();
@@ -80,6 +82,10 @@ const Layout = () => {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
+        <header className="flex justify-between items-center p-4 border-b">
+          <SidebarTrigger />
+          <NewOrderDialog />
+        </header>
         <Outlet />
       </SidebarInset>
     </SidebarProvider>
