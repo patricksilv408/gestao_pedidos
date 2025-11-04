@@ -142,23 +142,43 @@ export const UserEditDialog = ({ user, children, onSuccess }: UserEditDialogProp
     
     setIsDeleting(true);
     
-    // Delete the user profile (this will cascade delete due to ON DELETE CASCADE)
-    const { error } = await supabase
-      .from("profiles")
-      .delete()
-      .eq("id", user.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        showError("Sessão expirada. Faça login novamente.");
+        setIsDeleting(false);
+        return;
+      }
 
-    if (error) {
-      showError("Falha ao deletar usuário.");
-      console.error(error);
-    } else {
+      const response = await fetch(
+        `https://nfionqljfnnugoiueknr.supabase.co/functions/v1/delete-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId: user.id }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Falha ao deletar usuário');
+      }
+
       showSuccess("Usuário deletado com sucesso!");
       onSuccess();
       setShowDeleteDialog(false);
       setOpen(false);
+    } catch (error: any) {
+      showError(error.message || "Falha ao deletar usuário.");
+      console.error(error);
+    } finally {
+      setIsDeleting(false);
     }
-    
-    setIsDeleting(false);
   };
 
   return (
