@@ -10,11 +10,12 @@ type PedidosPorStatus = Record<PedidoStatus, Pedido[]>;
 
 interface KanbanBoardProps {
   searchTerm: string;
+  searchPhone: string;
   searchAddress: string;
   filterTempo: string;
 }
 
-export const KanbanBoard = ({ searchTerm, searchAddress, filterTempo }: KanbanBoardProps) => {
+export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTempo }: KanbanBoardProps) => {
   const { profile } = useUser();
   const [pedidos, setPedidos] = useState<PedidosPorStatus>({
     pendente: [],
@@ -62,6 +63,8 @@ export const KanbanBoard = ({ searchTerm, searchAddress, filterTempo }: KanbanBo
             setLoading(false);
             return;
           }
+        } else if (searchPhone) {
+          query = query.ilike('cliente_telefone', `%${searchPhone}%`);
         } else {
           if (searchAddress) {
             query = query.ilike('bairro', `%${searchAddress}%`);
@@ -105,7 +108,7 @@ export const KanbanBoard = ({ searchTerm, searchAddress, filterTempo }: KanbanBo
     };
     
     fetchPedidos();
-  }, [profile, searchTerm, searchAddress, filterTempo]);
+  }, [profile, searchTerm, searchPhone, searchAddress, filterTempo]);
 
   // Efeito para a assinatura em tempo real
   useEffect(() => {
