@@ -22,9 +22,9 @@ import { DateRange } from "react-day-picker";
 import { format, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Pedido } from "@/components/KanbanCard";
-import { EntregasPorEntregadorChart } from "@/components/EntregasPorEntregadorChart";
-import { EntregasPorEmpresaChart } from "@/components/EntregasPorEmpresaChart";
-import { EntregasAoLongoDoTempoChart } from "@/components/EntregasAoLongoDoTempoChart";
+import { EntregasPorEntregadorChart } from "../components/charts/EntregasPorEntregadorChart";
+import { EntregasPorEmpresaChart } from "../components/charts/EntregasPorEmpresaChart";
+import { EntregasAoLongoDoTempoChart } from "../components/charts/EntregasAoLongoDoTempoChart";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#AF19FF", "#FF4560"];
 
