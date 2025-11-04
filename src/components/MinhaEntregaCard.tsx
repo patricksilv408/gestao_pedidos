@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Pedido } from "./KanbanCard";
-import { MapPin, MessageSquare, Map, Building2, Ticket, CheckCircle, AlertTriangle, PlayCircle } from 'lucide-react';
+import { MapPin, MessageSquare, Map, Building2, Ticket, CheckCircle, AlertTriangle, PlayCircle, Phone } from 'lucide-react';
 import { NaoEntregueDialog } from "./NaoEntregueDialog";
 
 interface MinhaEntregaCardProps {
@@ -59,6 +59,12 @@ export const MinhaEntregaCard = ({ pedido, onStatusChange, onSuccess }: MinhaEnt
                         <a href={`https://wa.me/${cleanPhoneNumber(pedido.cliente_telefone)}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center">
                             <MessageSquare className="w-4 h-4 mr-2" />
                             WhatsApp
+                        </a>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild className="flex-1">
+                        <a href={`tel:${cleanPhoneNumber(pedido.cliente_telefone)}`} className="flex items-center justify-center">
+                            <Phone className="w-4 h-4 mr-2" />
+                            Ligar
                         </a>
                     </Button>
                 </div>
