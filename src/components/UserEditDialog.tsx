@@ -31,20 +31,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { UserProfile } from "@/context/SessionProvider";
 
-const formSchema = z.object({
-  full_name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
-  role: z.enum(["admin", "gestor", "entregador"]),
-  email: z.string().email("Email inválido.").optional().or(z.literal('')),
-  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres.").optional().or(z.literal('')),
-}).refine(data => {
-    // Se não for modo de edição (ou seja, é criação), email e senha são obrigatórios
-    if (!data.email && !data.password) return true; // Permite edição sem alterar email/senha
-    if (data.email && !data.password) return false;
-    return true;
-}, {
-    message: "A senha é obrigatória ao criar um novo usuário com email.",
-    path: ["password"],
-});
+const createFormSchema = (isEditMode: boolean) => {
+  const baseSchema = {
+    full_name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
+    role: z.enum(["admin", "gestor", "entregador"]),
+  };
+
+  if (isEditMode) {
+    return z.object(baseSchema);
+  }
+
+  return z.object({
+    ...baseSchema,
+    email: z.string().email("Email inválido."),
+    password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres."),
+  });
+};
 
 interface UserEditDialogProps {
   user?: UserProfile;
@@ -56,8 +58,8 @@ export const UserEditDialog = ({ user, children, onSuccess }: UserEditDialogProp
   const [open, setOpen] = useState(false);
   const isEditMode = !!user;
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<any>({
+    resolver: zodResolver(createFormSchema(isEditMode)),
     defaultValues: {
       full_name: "",
       role: "entregador",
@@ -72,8 +74,6 @@ export const UserEditDialog = ({ user, children, onSuccess }: UserEditDialogProp
         form.reset({
           full_name: user.full_name,
           role: user.role,
-          email: '',
-          password: ''
         });
       } else {
         form.reset({
@@ -86,7 +86,7 @@ export const UserEditDialog = ({ user, children, onSuccess }: UserEditDialogProp
     }
   }, [user, form, open]);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: any) => {
     if (isEditMode && user) {
       const { error } = await supabase
         .from("profiles")
@@ -102,10 +102,6 @@ export const UserEditDialog = ({ user, children, onSuccess }: UserEditDialogProp
         setOpen(false);
       }
     } else {
-      if (!values.email || !values.password) {
-        showError("Email e senha são obrigatórios para novos usuários.");
-        return;
-      }
       const { data, error: authError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -186,7 +182,7 @@ export const UserEditDialog = ({ user, children, onSuccess }: UserEditDialogProp
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Função</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione uma função" />

@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Pedido } from "./KanbanCard";
 import { KanbanColumn } from "./KanbanColumn";
 import { useUser, UserProfile } from "@/context/SessionProvider";
-import { showSuccess, showError } from "@/utils/toast";
+import { showError } from "@/utils/toast";
 
 type PedidoStatus = 'pendente' | 'em_rota' | 'entregue' | 'nao_entregue';
 type PedidosPorStatus = Record<PedidoStatus, Pedido[]>;
@@ -33,6 +33,7 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
 
     try {
       setLoading(true);
+      setError(null);
       
       let query = supabase
         .from("pedidos")
@@ -86,8 +87,10 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
         { pendente: [], em_rota: [], entregue: [], nao_entregue: [] }
       );
       setPedidos(pedidosPorStatus);
-    } catch (err: any)      {
-      setError("Falha ao buscar os pedidos.");
+    } catch (err: any) {
+      const errorMessage = "Falha ao buscar os pedidos.";
+      setError(errorMessage);
+      showError(errorMessage);
       console.error(err);
     } finally {
       setLoading(false);
@@ -101,8 +104,12 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
           .from('profiles')
           .select('*')
           .eq('role', 'entregador');
-        if (error) console.error("Error fetching entregadores:", error);
-        else setEntregadores(data || []);
+        if (error) {
+          console.error("Error fetching entregadores:", error);
+          showError("Falha ao buscar entregadores.");
+        } else {
+          setEntregadores(data || []);
+        }
       };
       fetchEntregadores();
     }
@@ -116,7 +123,7 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
     if (!profile) return;
 
     const channel = supabase
-      .channel('pedidos')
+      .channel('pedidos-kanban')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'pedidos' },
@@ -140,8 +147,6 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
     if (error) {
       showError("Falha ao atualizar o status do pedido.");
       console.error(error);
-    } else {
-      fetchPedidos(); // Atualiza a interface localmente
     }
   };
 
@@ -154,9 +159,6 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
     if (error) {
         showError("Falha ao atribuir entregador.");
         console.error(error);
-    } else {
-        showSuccess("Entregador atribuído com sucesso.");
-        fetchPedidos(); // Atualiza a interface localmente
     }
   };
 
