@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, differenceInHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export type Pedido = {
   id: string;
@@ -35,7 +37,7 @@ export type Pedido = {
   origem: 'ia_n8n' | 'manual' | 'api_externa';
   data_ultima_atualizacao: string;
   numero_vale: number | null;
-  entregador: { id: string; full_name: string } | null; // Alterado para objeto
+  entregador: { id: string; full_name: string } | null;
   empresa: string | null;
   latitude: number | null;
   longitude: number | null;
@@ -46,9 +48,17 @@ export type Pedido = {
 interface KanbanCardProps {
   pedido: Pedido;
   entregadores: UserProfile[];
+  handleStatusChange: (pedido: Pedido, newStatus: Pedido['status']) => void;
 }
 
-export const KanbanCard = ({ pedido, entregadores }: KanbanCardProps) => {
+const statusOptions: Pedido['status'][] = ['pendente', 'em_rota', 'entregue'];
+const statusLabels: Record<Pedido['status'], string> = {
+  pendente: 'Mover para Pendente',
+  em_rota: 'Mover para Em Rota',
+  entregue: 'Mover para Entregue',
+};
+
+export const KanbanCard = ({ pedido, entregadores, handleStatusChange }: KanbanCardProps) => {
   const { profile } = useUser();
 
   const tempoDecorrido = formatDistanceToNow(new Date(pedido.criado_em), {
@@ -84,7 +94,7 @@ export const KanbanCard = ({ pedido, entregadores }: KanbanCardProps) => {
   };
 
   return (
-    <Card className={cn("mb-4", isDelayed && "border-red-500 border-2")}>
+    <Card className={cn("mb-4 flex flex-col", isDelayed && "border-red-500 border-2")}>
       <CardHeader>
         <div className="flex justify-between items-start">
           <div>
@@ -116,7 +126,7 @@ export const KanbanCard = ({ pedido, entregadores }: KanbanCardProps) => {
           )}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow">
         <div className="space-y-2 text-sm text-gray-600 mb-4">
           <div className="flex items-center">
             <User className="w-4 h-4 mr-2 flex-shrink-0" />
@@ -155,6 +165,24 @@ export const KanbanCard = ({ pedido, entregadores }: KanbanCardProps) => {
         </div>
         <p className="text-xs text-gray-500 text-right">{tempoDecorrido}</p>
       </CardContent>
+      {(profile?.role === 'admin' || profile?.role === 'gestor' || profile?.role === 'entregador') && (
+        <CardFooter className="pt-4 border-t">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full">Mudar Status</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[--radix-dropdown-menu-trigger-width]">
+              {statusOptions
+                .filter(status => status !== pedido.status)
+                .map(status => (
+                  <DropdownMenuItem key={status} onClick={() => handleStatusChange(pedido, status)}>
+                    {statusLabels[status]}
+                  </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </CardFooter>
+      )}
     </Card>
   );
 };
