@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, differenceInHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { User, MapPin, Trash2, UserPlus, Ticket, Building2, Map, MessageSquare, AlertCircle } from "lucide-react";
+import { User, Trash2, UserPlus, Map, MessageSquare, AlertCircle } from "lucide-react";
 import { useUser, UserProfile } from "@/context/SessionProvider";
 import {
   AlertDialog,
@@ -27,6 +27,7 @@ import { showSuccess, showError } from "@/utils/toast";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PedidoDetalhesDialog } from "./PedidoDetalhesDialog";
+import { Badge } from "@/components/ui/badge";
 
 export type Pedido = {
   id: string;
@@ -134,24 +135,11 @@ export const KanbanCard = ({ pedido, entregadores, handleStatusChange, handleAss
             <User className="w-4 h-4 mr-2 flex-shrink-0" />
             <span>{pedido.entregador?.full_name || "Não atribuído"}</span>
           </div>
-          {pedido.bairro && (
-            <div className="flex items-center">
-              <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
-              <span>{pedido.bairro}</span>
-            </div>
-          )}
-          {pedido.empresa && (
-            <div className="flex items-center">
-              <Building2 className="w-4 h-4 mr-2 flex-shrink-0" />
-              <span>{pedido.empresa}</span>
-            </div>
-          )}
-          {pedido.numero_vale && (
-            <div className="flex items-center">
-              <Ticket className="w-4 h-4 mr-2 flex-shrink-0" />
-              <span>Vale: {pedido.numero_vale}</span>
-            </div>
-          )}
+          <div className="flex flex-wrap gap-1 pt-1">
+            {pedido.bairro && <Badge variant="secondary">{pedido.bairro}</Badge>}
+            {pedido.empresa && <Badge variant="outline">{pedido.empresa}</Badge>}
+            {pedido.numero_vale && <Badge>Vale: {pedido.numero_vale}</Badge>}
+          </div>
         </div>
 
         {(profile?.role === 'admin' || profile?.role === 'gestor') && (
