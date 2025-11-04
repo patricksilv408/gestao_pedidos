@@ -19,7 +19,7 @@ const Login = () => {
     <div className="min-h-screen flex">
       {/* Coluna Esquerda (Gráfica) */}
       <div
-        className="hidden md:block w-1/2 bg-cover bg-center"
+        className="hidden md:flex w-1/2 bg-cover bg-center"
         style={{ backgroundImage: "url('/login-bg.png')" }}
       />
 
@@ -27,7 +27,7 @@ const Login = () => {
       <div className="w-full md:w-1/2 flex items-center justify-center p-8">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <img src="/logo.png" alt="Logo" className="w-48 h-auto mx-auto mb-4" />
+            <img src="/favicon.png" alt="Logo" className="w-48 h-auto mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900">
               Gestão de Pedidos
             </h2>
