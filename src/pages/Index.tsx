@@ -11,7 +11,7 @@ import {
 
 const Index = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterBairro, setFilterBairro] = useState("");
+  const [searchAddress, setSearchAddress] = useState("");
   const [filterTempo, setFilterTempo] = useState("todos");
 
   return (
@@ -24,9 +24,9 @@ const Index = () => {
           className="max-w-xs"
         />
         <Input
-          placeholder="Filtrar por Bairro"
-          value={filterBairro}
-          onChange={(e) => setFilterBairro(e.target.value)}
+          placeholder="Buscar por Endereço"
+          value={searchAddress}
+          onChange={(e) => setSearchAddress(e.target.value)}
           className="max-w-xs"
           disabled={!!searchTerm}
         />
@@ -48,7 +48,7 @@ const Index = () => {
       <main className="flex-grow overflow-auto">
         <KanbanBoard
           searchTerm={searchTerm}
-          filterBairro={filterBairro}
+          searchAddress={searchAddress}
           filterTempo={filterTempo}
         />
       </main>

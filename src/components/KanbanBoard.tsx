@@ -10,11 +10,11 @@ type PedidosPorStatus = Record<PedidoStatus, Pedido[]>;
 
 interface KanbanBoardProps {
   searchTerm: string;
-  filterBairro: string;
+  searchAddress: string;
   filterTempo: string;
 }
 
-export const KanbanBoard = ({ searchTerm, filterBairro, filterTempo }: KanbanBoardProps) => {
+export const KanbanBoard = ({ searchTerm, searchAddress, filterTempo }: KanbanBoardProps) => {
   const { profile } = useUser();
   const [pedidos, setPedidos] = useState<PedidosPorStatus>({
     pendente: [],
@@ -55,12 +55,17 @@ export const KanbanBoard = ({ searchTerm, filterBairro, filterTempo }: KanbanBoa
         if (searchTerm) {
           query = query.eq('numero_vale', searchTerm);
         } else {
-          if (filterBairro) {
-            query = query.ilike('bairro', `%${filterBairro}%`);
+          if (searchAddress) {
+            query = query.ilike('bairro', `%${searchAddress}%`);
+            query = query.in('status', ['pendente', 'em_rota']);
           }
+
           if (filterTempo === 'atrasados') {
             const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-            query = query.lt('criado_em', twentyFourHoursAgo).neq('status', 'entregue');
+            query = query.lt('criado_em', twentyFourHoursAgo);
+            if (!searchAddress) {
+              query = query.neq('status', 'entregue');
+            }
           } else if (filterTempo === 'recentes') {
             const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
             query = query.gte('criado_em', twentyFourHoursAgo);
@@ -92,7 +97,7 @@ export const KanbanBoard = ({ searchTerm, filterBairro, filterTempo }: KanbanBoa
     };
     
     fetchPedidos();
-  }, [profile, searchTerm, filterBairro, filterTempo]);
+  }, [profile, searchTerm, searchAddress, filterTempo]);
 
   // Efeito para a assinatura em tempo real
   useEffect(() => {

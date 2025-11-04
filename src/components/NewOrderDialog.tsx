@@ -110,9 +110,9 @@ export const NewOrderDialog = () => {
               name="bairro"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Bairro</FormLabel>
+                  <FormLabel>Endereço</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Centro" {...field} />
+                    <Input placeholder="Ex: Rua das Flores, 123, Centro" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
