@@ -80,9 +80,11 @@ export const KanbanCard = ({ pedido, entregadores, handleStatusChange }: KanbanC
   };
 
   const handleAssign = async (entregadorId: string) => {
+    const newEntregadorId = entregadorId === 'unassigned' ? null : entregadorId;
+    
     const { error } = await supabase
       .from('pedidos')
-      .update({ entregador_id: entregadorId })
+      .update({ entregador_id: newEntregadorId })
       .eq('id', pedido.id);
     
     if (error) {
@@ -154,7 +156,7 @@ export const KanbanCard = ({ pedido, entregadores, handleStatusChange }: KanbanC
                 <SelectValue placeholder="Atribuir entregador" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Desatribuir</SelectItem>
+                <SelectItem value="unassigned">Desatribuir</SelectItem>
                 {entregadores.map(e => (
                   <SelectItem key={e.id} value={e.id}>{e.full_name}</SelectItem>
                 ))}
