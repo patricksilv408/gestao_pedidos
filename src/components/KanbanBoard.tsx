@@ -179,22 +179,6 @@ export const KanbanBoard = ({ searchTerm, filterBairro, filterTempo }: KanbanBoa
   };
 
   const handleAssignEntregador = async (pedido: Pedido, entregadorId: string | null) => {
-    const oldPedidos = { ...pedidos };
-    const status = pedido.status;
-
-    const newEntregador = entregadores.find(e => e.id === entregadorId) || null;
-    const newEntregadorProfile = newEntregador ? { id: newEntregador.id, full_name: newEntregador.full_name } : null;
-
-    setPedidos(prev => {
-        const newPedidosState = { ...prev };
-        newPedidosState[status] = newPedidosState[status].map(p => 
-            p.id === pedido.id 
-            ? { ...p, entregador_id: entregadorId, entregador: newEntregadorProfile } 
-            : p
-        );
-        return newPedidosState;
-    });
-
     const { error } = await supabase
         .from('pedidos')
         .update({ entregador_id: entregadorId })
@@ -203,7 +187,6 @@ export const KanbanBoard = ({ searchTerm, filterBairro, filterTempo }: KanbanBoa
     if (error) {
         showError("Falha ao atribuir entregador.");
         console.error(error);
-        setPedidos(oldPedidos);
     } else {
         showSuccess("Entregador atribuído com sucesso.");
     }
