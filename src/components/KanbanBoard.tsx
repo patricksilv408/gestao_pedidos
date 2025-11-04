@@ -136,6 +136,8 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
     if (error) {
       showError("Falha ao atualizar o status do pedido.");
       console.error(error);
+    } else {
+      fetchPedidos(); // Atualiza a interface localmente
     }
   };
 
@@ -150,6 +152,7 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
         console.error(error);
     } else {
         showSuccess("Entregador atribuído com sucesso.");
+        fetchPedidos(); // Atualiza a interface localmente
     }
   };
 
