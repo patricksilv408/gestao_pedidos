@@ -5,7 +5,7 @@ import { KanbanColumn } from "./KanbanColumn";
 import { useUser, UserProfile } from "@/context/SessionProvider";
 import { showSuccess, showError } from "@/utils/toast";
 
-type PedidoStatus = 'pendente' | 'em_rota' | 'entregue';
+type PedidoStatus = 'pendente' | 'em_rota' | 'entregue' | 'nao_entregue';
 type PedidosPorStatus = Record<PedidoStatus, Pedido[]>;
 
 interface KanbanBoardProps {
@@ -21,6 +21,7 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
     pendente: [],
     em_rota: [],
     entregue: [],
+    nao_entregue: [],
   });
   const [entregadores, setEntregadores] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,8 +59,7 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
           if (!isNaN(valeNumber)) {
             query = query.eq('numero_vale', valeNumber);
           } else {
-            // Se o termo de busca não for um número válido, não retorna nada
-            setPedidos({ pendente: [], em_rota: [], entregue: [] });
+            setPedidos({ pendente: [], em_rota: [], entregue: [], nao_entregue: [] });
             setLoading(false);
             return;
           }
@@ -68,7 +68,7 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
         } else {
           if (searchAddress) {
             query = query.ilike('bairro', `%${searchAddress}%`);
-            query = query.in('status', ['pendente', 'em_rota']);
+            query = query.in('status', ['pendente', 'em_rota', 'nao_entregue']);
           }
 
           if (filterTempo === 'atrasados') {
@@ -96,7 +96,7 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
             acc[status].push(pedido as Pedido);
             return acc;
           },
-          { pendente: [], em_rota: [], entregue: [] }
+          { pendente: [], em_rota: [], entregue: [], nao_entregue: [] }
         );
         setPedidos(pedidosPorStatus);
       } catch (err: any)      {
@@ -203,21 +203,16 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
   };
 
   const handleAssignEntregador = async (pedido: Pedido, entregadorId: string | null) => {
-    const updateData = {
-      entregador_id: entregadorId,
-      status: entregadorId ? 'em_rota' : 'pendente' as PedidoStatus,
-    };
-
     const { error } = await supabase
         .from('pedidos')
-        .update(updateData)
+        .update({ entregador_id: entregadorId })
         .eq('id', pedido.id);
 
     if (error) {
         showError("Falha ao atribuir entregador.");
         console.error(error);
     } else {
-        showSuccess("Entregador atribuído e status atualizado.");
+        showSuccess("Entregador atribuído com sucesso.");
     }
   };
 
@@ -225,10 +220,11 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
   if (error) return <div className="text-center p-8 text-red-500">{error}</div>;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 md:p-8">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-4 md:p-8">
       <KanbanColumn id="pendente" title="Pendente" pedidos={pedidos.pendente} entregadores={entregadores} handleStatusChange={handleStatusChange} handleAssignEntregador={handleAssignEntregador} />
       <KanbanColumn id="em_rota" title="Em Rota de Entrega" pedidos={pedidos.em_rota} entregadores={entregadores} handleStatusChange={handleStatusChange} handleAssignEntregador={handleAssignEntregador} />
       <KanbanColumn id="entregue" title="Entregue" pedidos={pedidos.entregue} entregadores={entregadores} handleStatusChange={handleStatusChange} handleAssignEntregador={handleAssignEntregador} />
+      <KanbanColumn id="nao_entregue" title="Não Entregue" pedidos={pedidos.nao_entregue} entregadores={entregadores} handleStatusChange={handleStatusChange} handleAssignEntregador={handleAssignEntregador} />
     </div>
   );
 };

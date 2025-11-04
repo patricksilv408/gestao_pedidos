@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, differenceInHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { User, MapPin, Trash2, UserPlus, Ticket, Building2, Map, MessageSquare } from "lucide-react";
+import { User, MapPin, Trash2, UserPlus, Ticket, Building2, Map, MessageSquare, AlertCircle } from "lucide-react";
 import { useUser, UserProfile } from "@/context/SessionProvider";
 import {
   AlertDialog,
@@ -33,7 +33,7 @@ export type Pedido = {
   cliente_nome: string;
   cliente_telefone: string;
   pedidos: string | null;
-  status: 'pendente' | 'em_rota' | 'entregue';
+  status: 'pendente' | 'em_rota' | 'entregue' | 'nao_entregue';
   origem: 'ia_n8n' | 'manual' | 'api_externa';
   data_ultima_atualizacao: string;
   numero_vale: number | null;
@@ -43,6 +43,7 @@ export type Pedido = {
   longitude: number | null;
   bairro: string | null;
   entregador_id: string | null;
+  motivo_nao_entrega: string | null;
 };
 
 interface KanbanCardProps {
@@ -52,11 +53,12 @@ interface KanbanCardProps {
   handleAssignEntregador: (pedido: Pedido, entregadorId: string | null) => void;
 }
 
-const statusOptions: Pedido['status'][] = ['pendente', 'em_rota', 'entregue'];
+const statusOptions: Pedido['status'][] = ['pendente', 'em_rota', 'entregue', 'nao_entregue'];
 const statusLabels: Record<Pedido['status'], string> = {
   pendente: 'Mover para Pendente',
   em_rota: 'Mover para Em Rota',
   entregue: 'Mover para Entregue',
+  nao_entregue: 'Mover para Não Entregue',
 };
 
 export const KanbanCard = ({ pedido, entregadores, handleStatusChange, handleAssignEntregador }: KanbanCardProps) => {
@@ -90,7 +92,7 @@ export const KanbanCard = ({ pedido, entregadores, handleStatusChange, handleAss
   }
 
   return (
-    <Card className={cn("mb-4 flex flex-col", isDelayed && "border-red-500 border-2")}>
+    <Card className={cn("mb-4 flex flex-col", isDelayed && "border-red-500 border-2", pedido.status === 'nao_entregue' && "bg-red-50 border-red-200")}>
       <CardHeader>
         <div className="flex justify-between items-start">
           <div>
@@ -171,6 +173,19 @@ export const KanbanCard = ({ pedido, entregadores, handleStatusChange, handleAss
             {pedido.pedidos || "Nenhum detalhe fornecido."}
           </div>
         </div>
+
+        {pedido.status === 'nao_entregue' && pedido.motivo_nao_entrega && (
+          <div className="mb-4">
+            <p className="text-sm font-medium text-red-600 flex items-center">
+              <AlertCircle className="w-4 h-4 mr-2" />
+              Motivo da Não Entrega:
+            </p>
+            <div className="p-2 mt-1 bg-red-50 border border-red-200 rounded-md text-sm text-red-800 whitespace-pre-wrap">
+              {pedido.motivo_nao_entrega}
+            </div>
+          </div>
+        )}
+
         <p className="text-xs text-gray-500 text-right">{tempoDecorrido}</p>
       </CardContent>
       {(profile?.role === 'admin' || profile?.role === 'gestor' || profile?.role === 'entregador') && (

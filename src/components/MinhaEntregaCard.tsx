@@ -1,15 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Pedido } from "./KanbanCard";
-import { MapPin, MessageSquare, Map, Building2, Ticket, CheckCircle, AlertTriangle } from 'lucide-react';
+import { MapPin, MessageSquare, Map, Building2, Ticket, CheckCircle, AlertTriangle, PlayCircle } from 'lucide-react';
+import { NaoEntregueDialog } from "./NaoEntregueDialog";
 
 interface MinhaEntregaCardProps {
     pedido: Pedido;
-    onConfirmar: () => void;
-    onProblema: () => void;
+    onStatusChange: (pedidoId: string, newStatus: 'em_rota' | 'entregue') => void;
+    onSuccess: () => void;
 }
 
-export const MinhaEntregaCard = ({ pedido, onConfirmar, onProblema }: MinhaEntregaCardProps) => {
+export const MinhaEntregaCard = ({ pedido, onStatusChange, onSuccess }: MinhaEntregaCardProps) => {
     const cleanPhoneNumber = (phone: string) => phone.replace(/\D/g, '');
 
     return (
@@ -63,14 +64,26 @@ export const MinhaEntregaCard = ({ pedido, onConfirmar, onProblema }: MinhaEntre
                 </div>
             </CardContent>
             <CardFooter className="flex items-center gap-2">
-                <Button onClick={onConfirmar} className="flex-1 bg-green-600 hover:bg-green-700">
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Confirmar Entrega
-                </Button>
-                <Button variant="destructive" onClick={onProblema} className="flex-1">
-                    <AlertTriangle className="w-4 h-4 mr-2" />
-                    Reportar Problema
-                </Button>
+                {pedido.status === 'pendente' && (
+                    <Button onClick={() => onStatusChange(pedido.id, 'em_rota')} className="flex-1">
+                        <PlayCircle className="w-4 h-4 mr-2" />
+                        Iniciar Entrega
+                    </Button>
+                )}
+                {pedido.status === 'em_rota' && (
+                    <>
+                        <Button onClick={() => onStatusChange(pedido.id, 'entregue')} className="flex-1 bg-green-600 hover:bg-green-700">
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Confirmar Entrega
+                        </Button>
+                        <NaoEntregueDialog pedidoId={pedido.id} onSuccess={onSuccess}>
+                            <Button variant="destructive" className="flex-1">
+                                <AlertTriangle className="w-4 h-4 mr-2" />
+                                Reportar Problema
+                            </Button>
+                        </NaoEntregueDialog>
+                    </>
+                )}
             </CardFooter>
         </Card>
     );

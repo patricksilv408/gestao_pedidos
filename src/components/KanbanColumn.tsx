@@ -16,7 +16,7 @@ export const KanbanColumn = ({ id, title, pedidos, entregadores, handleStatusCha
       <h2 className="text-lg font-bold mb-4 text-center">
         {title} ({pedidos.length})
       </h2>
-      <div className="flex-grow min-h-[100px]">
+      <div className="flex-grow min-h-[100px] overflow-y-auto">
         {pedidos.map((pedido) => (
           <KanbanCard 
             key={pedido.id} 

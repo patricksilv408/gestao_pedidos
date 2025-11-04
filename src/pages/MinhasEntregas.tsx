@@ -17,7 +17,7 @@ const MinhasEntregas = () => {
             .from('pedidos')
             .select('*, entregador:profiles(id, full_name)')
             .eq('entregador_id', profile.id)
-            .eq('status', 'em_rota')
+            .in('status', ['pendente', 'em_rota'])
             .order('criado_em', { ascending: true });
 
         if (error) {
@@ -30,7 +30,9 @@ const MinhasEntregas = () => {
     };
 
     useEffect(() => {
-        fetchPedidos();
+        if (profile) {
+            fetchPedidos();
+        }
     }, [profile]);
 
     useEffect(() => {
@@ -52,7 +54,7 @@ const MinhasEntregas = () => {
         }
     }, [profile]);
 
-    const handleUpdateStatus = async (pedidoId: string, status: 'entregue' | 'pendente') => {
+    const handleUpdateStatus = async (pedidoId: string, status: 'em_rota' | 'entregue') => {
         const { error } = await supabase
             .from('pedidos')
             .update({ status })
@@ -61,7 +63,7 @@ const MinhasEntregas = () => {
         if (error) {
             showError("Falha ao atualizar o status do pedido.");
         } else {
-            showSuccess(`Pedido movido para ${status === 'entregue' ? 'Entregue' : 'Pendente'}.`);
+            showSuccess(`Status do pedido atualizado com sucesso.`);
         }
     };
 
@@ -71,17 +73,17 @@ const MinhasEntregas = () => {
 
     return (
         <div className="p-4 md:p-8">
-            <h1 className="text-2xl font-bold mb-6 text-center">Minhas Entregas em Rota</h1>
+            <h1 className="text-2xl font-bold mb-6 text-center">Minhas Entregas</h1>
             {pedidos.length === 0 ? (
-                <p className="text-center text-gray-500">Você não tem nenhuma entrega em rota no momento.</p>
+                <p className="text-center text-gray-500">Você não tem nenhuma entrega pendente ou em rota.</p>
             ) : (
                 <div className="max-w-2xl mx-auto space-y-4">
                     {pedidos.map(pedido => (
                         <MinhaEntregaCard 
                             key={pedido.id} 
                             pedido={pedido} 
-                            onConfirmar={() => handleUpdateStatus(pedido.id, 'entregue')} 
-                            onProblema={() => handleUpdateStatus(pedido.id, 'pendente')} 
+                            onStatusChange={handleUpdateStatus}
+                            onSuccess={fetchPedidos}
                         />
                     ))}
                 </div>
