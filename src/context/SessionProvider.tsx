@@ -25,26 +25,28 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      
-      if (session?.user) {
-        const { data: userProfile, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
+      try {
+        setSession(session);
         
-        if (error) {
-          console.error("Error fetching profile on auth state change:", error);
-          setProfile(null);
+        if (session?.user) {
+          const { data: userProfile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (error) {
+            console.error("Error fetching profile on auth state change:", error);
+            setProfile(null);
+          } else {
+            setProfile(userProfile);
+          }
         } else {
-          setProfile(userProfile);
+          setProfile(null);
         }
-      } else {
-        setProfile(null);
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
