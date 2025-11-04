@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, differenceInHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { User, MapPin, Trash2, UserPlus, Ticket } from "lucide-react";
+import { User, MapPin, Trash2, UserPlus, Ticket, Building2, Map, MessageSquare } from "lucide-react";
 import { useUser, UserProfile } from "@/context/SessionProvider";
 import {
   AlertDialog,
@@ -95,6 +95,10 @@ export const KanbanCard = ({ pedido, entregadores, handleStatusChange }: KanbanC
     }
   };
 
+  const cleanPhoneNumber = (phone: string) => {
+    return phone.replace(/\D/g, '');
+  }
+
   return (
     <Card className={cn("mb-4 flex flex-col", isDelayed && "border-red-500 border-2")}>
       <CardHeader>
@@ -140,6 +144,12 @@ export const KanbanCard = ({ pedido, entregadores, handleStatusChange }: KanbanC
               <span>{pedido.bairro}</span>
             </div>
           )}
+          {pedido.empresa && (
+            <div className="flex items-center">
+              <Building2 className="w-4 h-4 mr-2 flex-shrink-0" />
+              <span>{pedido.empresa}</span>
+            </div>
+          )}
           {pedido.numero_vale && (
             <div className="flex items-center">
               <Ticket className="w-4 h-4 mr-2 flex-shrink-0" />
@@ -174,8 +184,8 @@ export const KanbanCard = ({ pedido, entregadores, handleStatusChange }: KanbanC
         <p className="text-xs text-gray-500 text-right">{tempoDecorrido}</p>
       </CardContent>
       {(profile?.role === 'admin' || profile?.role === 'gestor' || profile?.role === 'entregador') && (
-        <CardFooter className="pt-4 border-t">
-          <DropdownMenu>
+        <CardFooter className="pt-4 border-t flex flex-col gap-2">
+           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-full">Mudar Status</Button>
             </DropdownMenuTrigger>
@@ -189,6 +199,22 @@ export const KanbanCard = ({ pedido, entregadores, handleStatusChange }: KanbanC
                 ))}
             </DropdownMenuContent>
           </DropdownMenu>
+          <div className="flex items-center gap-2 w-full">
+            {pedido.latitude && pedido.longitude && (
+                <Button variant="outline" size="sm" asChild className="flex-1">
+                    <a href={`https://www.google.com/maps/search/?api=1&query=${pedido.latitude},${pedido.longitude}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center">
+                        <Map className="w-4 h-4 mr-2" />
+                        Localização
+                    </a>
+                </Button>
+            )}
+            <Button variant="outline" size="sm" asChild className="flex-1">
+                <a href={`https://wa.me/${cleanPhoneNumber(pedido.cliente_telefone)}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center">
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    WhatsApp
+                </a>
+            </Button>
+          </div>
         </CardFooter>
       )}
     </Card>
