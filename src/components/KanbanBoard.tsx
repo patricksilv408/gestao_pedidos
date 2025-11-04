@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Pedido } from "./KanbanCard";
 import { KanbanColumn } from "./KanbanColumn";
@@ -27,7 +27,69 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Efeito para buscar entregadores
+  const fetchPedidos = useCallback(async () => {
+    if (!profile) return;
+
+    try {
+      setLoading(true);
+      
+      let query = supabase
+        .from("pedidos")
+        .select("*, entregador:profiles(id, full_name)");
+
+      if (searchTerm) {
+        const valeNumber = parseInt(searchTerm, 10);
+        if (!isNaN(valeNumber)) {
+          query = query.eq('numero_vale', valeNumber);
+        } else {
+          setPedidos({ pendente: [], em_rota: [], entregue: [], nao_entregue: [] });
+          setLoading(false);
+          return;
+        }
+      } else if (searchPhone) {
+        query = query.ilike('cliente_telefone', `%${searchPhone}%`);
+      } else {
+        if (searchAddress) {
+          query = query.ilike('bairro', `%${searchAddress}%`);
+          query = query.in('status', ['pendente', 'em_rota', 'nao_entregue']);
+        }
+
+        if (filterTempo === 'atrasados') {
+          const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+          query = query.lt('criado_em', twentyFourHoursAgo);
+          if (!searchAddress) {
+            query = query.neq('status', 'entregue');
+          }
+        } else if (filterTempo === 'recentes') {
+          const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+          query = query.gte('criado_em', twentyFourHoursAgo);
+        }
+      }
+
+      const { data, error } = await query.order("criado_em", { ascending: true });
+
+      if (error) throw error;
+
+      const pedidosPorStatus = (data || []).reduce<PedidosPorStatus>(
+        (acc, pedido) => {
+          const status = pedido.status as PedidoStatus;
+          if (!acc[status]) {
+            acc[status] = [];
+          }
+          acc[status].push(pedido as Pedido);
+          return acc;
+        },
+        { pendente: [], em_rota: [], entregue: [], nao_entregue: [] }
+      );
+      setPedidos(pedidosPorStatus);
+    } catch (err: any)      {
+      setError("Falha ao buscar os pedidos.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [profile, searchTerm, searchPhone, searchAddress, filterTempo]);
+
   useEffect(() => {
     if (profile && (profile.role === 'admin' || profile.role === 'gestor')) {
       const fetchEntregadores = async () => {
@@ -42,75 +104,10 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
     }
   }, [profile]);
 
-  // Efeito para buscar pedidos com base nos filtros
   useEffect(() => {
-    if (!profile) return;
-
-    const fetchPedidos = async () => {
-      try {
-        setLoading(true);
-        
-        let query = supabase
-          .from("pedidos")
-          .select("*, entregador:profiles(id, full_name)");
-
-        if (searchTerm) {
-          const valeNumber = parseInt(searchTerm, 10);
-          if (!isNaN(valeNumber)) {
-            query = query.eq('numero_vale', valeNumber);
-          } else {
-            setPedidos({ pendente: [], em_rota: [], entregue: [], nao_entregue: [] });
-            setLoading(false);
-            return;
-          }
-        } else if (searchPhone) {
-          query = query.ilike('cliente_telefone', `%${searchPhone}%`);
-        } else {
-          if (searchAddress) {
-            query = query.ilike('bairro', `%${searchAddress}%`);
-            query = query.in('status', ['pendente', 'em_rota', 'nao_entregue']);
-          }
-
-          if (filterTempo === 'atrasados') {
-            const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-            query = query.lt('criado_em', twentyFourHoursAgo);
-            if (!searchAddress) {
-              query = query.neq('status', 'entregue');
-            }
-          } else if (filterTempo === 'recentes') {
-            const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-            query = query.gte('criado_em', twentyFourHoursAgo);
-          }
-        }
-
-        const { data, error } = await query.order("criado_em", { ascending: true });
-
-        if (error) throw error;
-
-        const pedidosPorStatus = (data || []).reduce<PedidosPorStatus>(
-          (acc, pedido) => {
-            const status = pedido.status as PedidoStatus;
-            if (!acc[status]) {
-              acc[status] = [];
-            }
-            acc[status].push(pedido as Pedido);
-            return acc;
-          },
-          { pendente: [], em_rota: [], entregue: [], nao_entregue: [] }
-        );
-        setPedidos(pedidosPorStatus);
-      } catch (err: any)      {
-        setError("Falha ao buscar os pedidos.");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchPedidos();
-  }, [profile, searchTerm, searchPhone, searchAddress, filterTempo]);
+  }, [fetchPedidos]);
 
-  // Efeito para a assinatura em tempo real
   useEffect(() => {
     if (!profile) return;
 
@@ -119,68 +116,8 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'pedidos' },
-        (payload) => {
-          setPedidos(currentPedidos => {
-            const newPedidosState = JSON.parse(JSON.stringify(currentPedidos));
-
-            switch (payload.eventType) {
-              case 'INSERT': {
-                const newPedido = payload.new as Pedido;
-                if (newPedido.entregador_id) {
-                  const entregadorProfile = entregadores.find(e => e.id === newPedido.entregador_id);
-                  newPedido.entregador = entregadorProfile ? { id: entregadorProfile.id, full_name: entregadorProfile.full_name } : null;
-                } else {
-                  newPedido.entregador = null;
-                }
-                const status = newPedido.status;
-                if (newPedidosState[status] && !newPedidosState[status].some((p: Pedido) => p.id === newPedido.id)) {
-                  newPedidosState[status].push(newPedido);
-                }
-                break;
-              }
-              case 'UPDATE': {
-                const updatedPedido = payload.new as Pedido;
-                const oldStatus = (payload.old as Pedido)?.status;
-                const newStatus = updatedPedido.status;
-
-                if (updatedPedido.entregador_id) {
-                    const entregadorProfile = entregadores.find(e => e.id === updatedPedido.entregador_id);
-                    updatedPedido.entregador = entregadorProfile ? { id: entregadorProfile.id, full_name: entregadorProfile.full_name } : null;
-                } else {
-                    updatedPedido.entregador = null;
-                }
-
-                if (oldStatus && newPedidosState[oldStatus]) {
-                  newPedidosState[oldStatus] = newPedidosState[oldStatus].filter((p: Pedido) => p.id !== updatedPedido.id);
-                }
-                
-                if (newPedidosState[newStatus]) {
-                  const existingIndex = newPedidosState[newStatus].findIndex((p: Pedido) => p.id === updatedPedido.id);
-                  if (existingIndex > -1) {
-                    newPedidosState[newStatus][existingIndex] = updatedPedido;
-                  } else {
-                    newPedidosState[newStatus].push(updatedPedido);
-                  }
-                }
-                break;
-              }
-              case 'DELETE': {
-                const deletedPedido = payload.old as Pedido;
-                Object.keys(newPedidosState).forEach(status => {
-                    newPedidosState[status as PedidoStatus] = newPedidosState[status as PedidoStatus].filter((p: Pedido) => p.id !== deletedPedido.id);
-                });
-                break;
-              }
-              default:
-                break;
-            }
-            
-            Object.keys(newPedidosState).forEach(status => {
-                newPedidosState[status as PedidoStatus].sort((a: Pedido, b: Pedido) => new Date(a.criado_em).getTime() - new Date(b.criado_em).getTime());
-            });
-
-            return newPedidosState;
-          });
+        () => {
+          fetchPedidos();
         }
       )
       .subscribe();
@@ -188,7 +125,7 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile, entregadores]);
+  }, [profile, fetchPedidos]);
 
   const handleStatusChange = async (pedido: Pedido, newStatus: PedidoStatus) => {
     const { error } = await supabase
