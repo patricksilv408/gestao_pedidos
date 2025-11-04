@@ -89,7 +89,7 @@ export const KanbanBoard = ({ searchTerm, filterBairro, filterTempo }: KanbanBoa
       }
 
       const channel = supabase
-        .channel('public:pedidos')
+        .channel('pedidos')
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'pedidos' },
