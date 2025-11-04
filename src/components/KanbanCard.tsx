@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, differenceInHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { User, MapPin, Trash2, UserPlus } from "lucide-react";
+import { User, MapPin, Trash2, UserPlus, Ticket } from "lucide-react";
 import { useUser, UserProfile } from "@/context/SessionProvider";
 import {
   AlertDialog,
@@ -136,6 +136,12 @@ export const KanbanCard = ({ pedido, entregadores, handleStatusChange }: KanbanC
             <div className="flex items-center">
               <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
               <span>{pedido.bairro}</span>
+            </div>
+          )}
+          {pedido.numero_vale && (
+            <div className="flex items-center">
+              <Ticket className="w-4 h-4 mr-2 flex-shrink-0" />
+              <span>Vale: {pedido.numero_vale}</span>
             </div>
           )}
         </div>

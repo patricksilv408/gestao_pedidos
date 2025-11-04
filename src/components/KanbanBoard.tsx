@@ -8,7 +8,13 @@ import { showError } from "@/utils/toast";
 type PedidoStatus = 'pendente' | 'em_rota' | 'entregue';
 type PedidosPorStatus = Record<PedidoStatus, Pedido[]>;
 
-export const KanbanBoard = () => {
+interface KanbanBoardProps {
+  searchTerm: string;
+  filterBairro: string;
+  filterTempo: string;
+}
+
+export const KanbanBoard = ({ searchTerm, filterBairro, filterTempo }: KanbanBoardProps) => {
   const { profile } = useUser();
   const [pedidos, setPedidos] = useState<PedidosPorStatus>({
     pendente: [],
@@ -19,33 +25,54 @@ export const KanbanBoard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPedidos = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("pedidos")
-        .select("*, entregador:profiles(id, full_name)")
-        .order("criado_em", { ascending: true });
-
-      if (error) throw error;
-
-      const pedidosPorStatus = (data || []).reduce<PedidosPorStatus>(
-        (acc, pedido) => {
-          acc[pedido.status as PedidoStatus].push(pedido as Pedido);
-          return acc;
-        },
-        { pendente: [], em_rota: [], entregue: [] }
-      );
-      setPedidos(pedidosPorStatus);
-    } catch (err: any)      {
-      setError("Falha ao buscar os pedidos.");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchPedidos = async () => {
+      try {
+        setLoading(true);
+        
+        let query = supabase
+          .from("pedidos")
+          .select("*, entregador:profiles(id, full_name)");
+
+        if (searchTerm) {
+          query = query.eq('numero_vale', searchTerm);
+        } else {
+          if (filterBairro) {
+            query = query.ilike('bairro', `%${filterBairro}%`);
+          }
+          if (filterTempo === 'atrasados') {
+            const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+            query = query.lt('criado_em', twentyFourHoursAgo).neq('status', 'entregue');
+          } else if (filterTempo === 'recentes') {
+            const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+            query = query.gte('criado_em', twentyFourHoursAgo);
+          }
+        }
+
+        const { data, error } = await query.order("criado_em", { ascending: true });
+
+        if (error) throw error;
+
+        const pedidosPorStatus = (data || []).reduce<PedidosPorStatus>(
+          (acc, pedido) => {
+            const status = pedido.status as PedidoStatus;
+            if (!acc[status]) {
+              acc[status] = [];
+            }
+            acc[status].push(pedido as Pedido);
+            return acc;
+          },
+          { pendente: [], em_rota: [], entregue: [] }
+        );
+        setPedidos(pedidosPorStatus);
+      } catch (err: any)      {
+        setError("Falha ao buscar os pedidos.");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (profile) {
       fetchPedidos();
 
@@ -76,13 +103,12 @@ export const KanbanBoard = () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [profile]);
+  }, [profile, searchTerm, filterBairro, filterTempo]);
 
   const handleStatusChange = async (pedido: Pedido, newStatus: PedidoStatus) => {
     const oldPedidos = pedidos;
     const oldStatus = pedido.status;
 
-    // Atualização Otimista
     setPedidos(prev => {
       const newPedidosState = { ...prev };
       newPedidosState[oldStatus] = newPedidosState[oldStatus].filter(p => p.id !== pedido.id);
@@ -98,7 +124,6 @@ export const KanbanBoard = () => {
     if (error) {
       showError("Falha ao atualizar o status do pedido.");
       console.error(error);
-      // Reverte em caso de erro
       setPedidos(oldPedidos);
     }
   };
