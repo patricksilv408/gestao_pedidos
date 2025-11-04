@@ -174,33 +174,39 @@ const Dashboard = () => {
       </div>
 
       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-4">
-          <Skeleton className="h-[120px]" />
-          <Skeleton className="h-[120px]" />
-          <Skeleton className="h-[120px]" />
-          <Skeleton className="h-[120px]" />
-        </div>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card><CardHeader><CardTitle>Total de Pedidos</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{kpis.total}</div></CardContent></Card>
-          <Card><CardHeader><CardTitle>Pendentes</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{kpis.pendentes}</div></CardContent></Card>
-          <Card><CardHeader><CardTitle>Em Rota</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{kpis.emRota}</div></CardContent></Card>
-          <Card><CardHeader><CardTitle>Entregues</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{kpis.entregues}</div></CardContent></Card>
-        </div>
-      )}
-
-      {isLoading ? (
-        <div className="grid gap-6 md:grid-cols-2">
-            <Skeleton className="h-[400px]" />
-            <Skeleton className="h-[400px]" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-3">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Skeleton className="h-[120px]" />
+              <Skeleton className="h-[120px]" />
+              <Skeleton className="h-[120px]" />
+              <Skeleton className="h-[120px]" />
+            </div>
+          </div>
+          <div className="lg:col-span-2"><Skeleton className="h-[400px]" /></div>
+          <div className="lg:col-span-1"><Skeleton className="h-[400px]" /></div>
+          <div className="lg:col-span-3"><Skeleton className="h-[400px]" /></div>
         </div>
       ) : dashboardData.length > 0 ? (
-        <div className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-                <EntregasPorEntregadorChart data={chartData.porEntregador} />
-                <EntregasPorEmpresaChart data={chartData.porEmpresa} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card><CardHeader><CardTitle>Total de Pedidos</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{kpis.total}</div></CardContent></Card>
+              <Card><CardHeader><CardTitle>Pendentes</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{kpis.pendentes}</div></CardContent></Card>
+              <Card><CardHeader><CardTitle>Em Rota</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{kpis.emRota}</div></CardContent></Card>
+              <Card><CardHeader><CardTitle>Entregues</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{kpis.entregues}</div></CardContent></Card>
             </div>
+          </div>
+          
+          <div className="lg:col-span-2">
             <EntregasAoLongoDoTempoChart data={chartData.aoLongoDoTempo} />
+          </div>
+          <div className="lg:col-span-1">
+            <EntregasPorEmpresaChart data={chartData.porEmpresa} />
+          </div>
+          <div className="lg:col-span-3">
+            <EntregasPorEntregadorChart data={chartData.porEntregador} />
+          </div>
         </div>
       ) : (
         <div className="text-center py-12 text-gray-500">
