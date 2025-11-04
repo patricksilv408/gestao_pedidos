@@ -24,46 +24,14 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
-
-        if (sessionError) {
-          console.error("Error getting session:", sessionError);
-          return;
-        }
-        
-        setSession(currentSession);
-
-        if (currentSession?.user) {
-          const { data: userProfile, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', currentSession.user.id)
-            .single();
-          
-          if (profileError) {
-            console.error("Error fetching profile:", profileError);
-          } else {
-            setProfile(userProfile);
-          }
-        }
-      } catch (e) {
-        console.error("An unexpected error occurred in session provider:", e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
-      setSession(newSession);
-      if (newSession?.user) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setSession(session);
+      
+      if (session?.user) {
         const { data: userProfile, error } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', newSession.user.id)
+          .eq('id', session.user.id)
           .single();
         
         if (error) {
@@ -75,6 +43,8 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setProfile(null);
       }
+      
+      setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
