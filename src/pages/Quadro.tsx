@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const Index = () => {
+const Quadro = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchPhone, setSearchPhone] = useState("");
   const [searchAddress, setSearchAddress] = useState("");
@@ -66,4 +66,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default Quadro;

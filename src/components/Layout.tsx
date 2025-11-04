@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/context/SessionProvider";
 import { supabase } from "@/integrations/supabase/client";
-import { LayoutGrid, LogOut, Users } from "lucide-react";
+import { Home, LayoutGrid, LogOut, Users } from "lucide-react";
 import { Link, Outlet, useLocation, Navigate } from "react-router-dom";
 import { NewOrderDialog } from "./NewOrderDialog";
 
@@ -87,8 +87,16 @@ const Layout = () => {
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
                 <Link to="/">
+                  <Home className="w-4 h-4 mr-2" />
+                  Dashboard
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <Link to="/quadro">
                   <LayoutGrid className="w-4 h-4 mr-2" />
-                  Quadro
+                  Quadro de Pedidos
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
