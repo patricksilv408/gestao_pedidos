@@ -49,6 +49,7 @@ interface KanbanCardProps {
   pedido: Pedido;
   entregadores: UserProfile[];
   handleStatusChange: (pedido: Pedido, newStatus: Pedido['status']) => void;
+  handleAssignEntregador: (pedido: Pedido, entregadorId: string | null) => void;
 }
 
 const statusOptions: Pedido['status'][] = ['pendente', 'em_rota', 'entregue'];
@@ -58,7 +59,7 @@ const statusLabels: Record<Pedido['status'], string> = {
   entregue: 'Mover para Entregue',
 };
 
-export const KanbanCard = ({ pedido, entregadores, handleStatusChange }: KanbanCardProps) => {
+export const KanbanCard = ({ pedido, entregadores, handleStatusChange, handleAssignEntregador }: KanbanCardProps) => {
   const { profile } = useUser();
 
   const tempoDecorrido = formatDistanceToNow(new Date(pedido.criado_em), {
@@ -79,20 +80,9 @@ export const KanbanCard = ({ pedido, entregadores, handleStatusChange }: KanbanC
     }
   };
 
-  const handleAssign = async (entregadorId: string) => {
+  const handleAssign = (entregadorId: string) => {
     const newEntregadorId = entregadorId === 'unassigned' ? null : entregadorId;
-    
-    const { error } = await supabase
-      .from('pedidos')
-      .update({ entregador_id: newEntregadorId })
-      .eq('id', pedido.id);
-    
-    if (error) {
-      showError("Falha ao atribuir entregador.");
-      console.error(error);
-    } else {
-      showSuccess("Entregador atribuído com sucesso.");
-    }
+    handleAssignEntregador(pedido, newEntregadorId);
   };
 
   const cleanPhoneNumber = (phone: string) => {

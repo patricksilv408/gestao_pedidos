@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Pedido } from "./KanbanCard";
 import { KanbanColumn } from "./KanbanColumn";
 import { useUser, UserProfile } from "@/context/SessionProvider";
-import { showError } from "@/utils/toast";
+import { showSuccess, showError } from "@/utils/toast";
 
 type PedidoStatus = 'pendente' | 'em_rota' | 'entregue';
 type PedidosPorStatus = Record<PedidoStatus, Pedido[]>;
@@ -128,14 +128,45 @@ export const KanbanBoard = ({ searchTerm, filterBairro, filterTempo }: KanbanBoa
     }
   };
 
+  const handleAssignEntregador = async (pedido: Pedido, entregadorId: string | null) => {
+    const oldPedidos = { ...pedidos };
+    const status = pedido.status;
+
+    const newEntregador = entregadores.find(e => e.id === entregadorId) || null;
+    const newEntregadorProfile = newEntregador ? { id: newEntregador.id, full_name: newEntregador.full_name } : null;
+
+    setPedidos(prev => {
+        const newPedidosState = { ...prev };
+        newPedidosState[status] = newPedidosState[status].map(p => 
+            p.id === pedido.id 
+            ? { ...p, entregador_id: entregadorId, entregador: newEntregadorProfile } 
+            : p
+        );
+        return newPedidosState;
+    });
+
+    const { error } = await supabase
+        .from('pedidos')
+        .update({ entregador_id: entregadorId })
+        .eq('id', pedido.id);
+
+    if (error) {
+        showError("Falha ao atribuir entregador.");
+        console.error(error);
+        setPedidos(oldPedidos);
+    } else {
+        showSuccess("Entregador atribuído com sucesso.");
+    }
+  };
+
   if (loading) return <div className="text-center p-8">Carregando pedidos...</div>;
   if (error) return <div className="text-center p-8 text-red-500">{error}</div>;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 md:p-8">
-      <KanbanColumn id="pendente" title="Pendente" pedidos={pedidos.pendente} entregadores={entregadores} handleStatusChange={handleStatusChange} />
-      <KanbanColumn id="em_rota" title="Em Rota de Entrega" pedidos={pedidos.em_rota} entregadores={entregadores} handleStatusChange={handleStatusChange} />
-      <KanbanColumn id="entregue" title="Entregue" pedidos={pedidos.entregue} entregadores={entregadores} handleStatusChange={handleStatusChange} />
+      <KanbanColumn id="pendente" title="Pendente" pedidos={pedidos.pendente} entregadores={entregadores} handleStatusChange={handleStatusChange} handleAssignEntregador={handleAssignEntregador} />
+      <KanbanColumn id="em_rota" title="Em Rota de Entrega" pedidos={pedidos.em_rota} entregadores={entregadores} handleStatusChange={handleStatusChange} handleAssignEntregador={handleAssignEntregador} />
+      <KanbanColumn id="entregue" title="Entregue" pedidos={pedidos.entregue} entregadores={entregadores} handleStatusChange={handleStatusChange} handleAssignEntregador={handleAssignEntregador} />
     </div>
   );
 };

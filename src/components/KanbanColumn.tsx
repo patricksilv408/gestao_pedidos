@@ -7,9 +7,10 @@ interface KanbanColumnProps {
   pedidos: Pedido[];
   entregadores: UserProfile[];
   handleStatusChange: (pedido: Pedido, newStatus: Pedido['status']) => void;
+  handleAssignEntregador: (pedido: Pedido, entregadorId: string | null) => void;
 }
 
-export const KanbanColumn = ({ id, title, pedidos, entregadores, handleStatusChange }: KanbanColumnProps) => {
+export const KanbanColumn = ({ id, title, pedidos, entregadores, handleStatusChange, handleAssignEntregador }: KanbanColumnProps) => {
   return (
     <div className="bg-gray-100 p-4 rounded-lg flex flex-col">
       <h2 className="text-lg font-bold mb-4 text-center">
@@ -17,7 +18,13 @@ export const KanbanColumn = ({ id, title, pedidos, entregadores, handleStatusCha
       </h2>
       <div className="flex-grow min-h-[100px]">
         {pedidos.map((pedido) => (
-          <KanbanCard key={pedido.id} pedido={pedido} entregadores={entregadores} handleStatusChange={handleStatusChange} />
+          <KanbanCard 
+            key={pedido.id} 
+            pedido={pedido} 
+            entregadores={entregadores} 
+            handleStatusChange={handleStatusChange}
+            handleAssignEntregador={handleAssignEntregador} 
+          />
         ))}
       </div>
     </div>
