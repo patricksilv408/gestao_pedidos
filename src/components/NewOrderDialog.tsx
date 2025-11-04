@@ -32,8 +32,8 @@ const formSchema = z.object({
   cliente_telefone: z.string().min(8, {
     message: "O telefone deve ter pelo menos 8 caracteres.",
   }),
-  bairro: z.string().optional(),
-  pedidos: z.string().optional(),
+  bairro: z.string().optional().transform(val => val || null),
+  pedidos: z.string().optional().transform(val => val || null),
 });
 
 export const NewOrderDialog = () => {
