@@ -24,6 +24,11 @@ import { Home, LayoutGrid, LogOut, Users } from "lucide-react";
 import { Link, Outlet, useLocation, Navigate } from "react-router-dom";
 import { NewOrderDialog } from "./NewOrderDialog";
 
+// I'm assuming SidebarGroup is a simple div wrapper for grouping items.
+const SidebarGroup = ({ children }: { children: React.ReactNode }) => (
+  <div>{children}</div>
+);
+
 const Layout = () => {
   const { profile } = useUser();
   const location = useLocation();
@@ -78,36 +83,50 @@ const Layout = () => {
   // Layout padrão para Admin/Gestor
   return (
     <SidebarProvider>
-      <Sidebar>
+      <Sidebar variant="inset">
         <SidebarHeader>
-          <img src="/logo.png" alt="Logo" className="w-32 h-auto" />
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild className="h-auto p-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0">
+                <Link to="/">
+                  <img src="/logo.png" alt="Logo" className="w-32 h-auto" />
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link to="/">
-                  <Home className="w-4 h-4 mr-2" />
-                  Dashboard
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link to="/quadro">
-                  <LayoutGrid className="w-4 h-4 mr-2" />
-                  Quadro de Pedidos
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link to="/usuarios">
-                  <Users className="w-4 h-4 mr-2" />
-                  Usuários
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            <SidebarGroup>
+              <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 mt-2">Navegação</h3>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link to="/">
+                    <Home className="w-4 h-4 mr-2" />
+                    Dashboard
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link to="/quadro">
+                    <LayoutGrid className="w-4 h-4 mr-2" />
+                    Quadro de Pedidos
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarGroup>
+            <SidebarGroup>
+              <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 mt-4">Gestão</h3>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link to="/usuarios">
+                    <Users className="w-4 h-4 mr-2" />
+                    Usuários
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarGroup>
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
