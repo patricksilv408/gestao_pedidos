@@ -161,10 +161,10 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-4 md:p-8">
-      <KanbanColumn id="pendente" title="Pendente" pedidos={pedidos.pendente} entregadores={entregadores} handleStatusChange={handleStatusChange} handleAssignEntregador={handleAssignEntregador} />
-      <KanbanColumn id="em_rota" title="Em Rota de Entrega" pedidos={pedidos.em_rota} entregadores={entregadores} handleStatusChange={handleStatusChange} handleAssignEntregador={handleAssignEntregador} />
-      <KanbanColumn id="entregue" title="Entregue" pedidos={pedidos.entregue} entregadores={entregadores} handleStatusChange={handleStatusChange} handleAssignEntregador={handleAssignEntregador} />
-      <KanbanColumn id="nao_entregue" title="Não Entregue" pedidos={pedidos.nao_entregue} entregadores={entregadores} handleStatusChange={handleStatusChange} handleAssignEntregador={handleAssignEntregador} />
+      <KanbanColumn id="pendente" title="Pendente" pedidos={pedidos.pendente} entregadores={entregadores} handleStatusChange={handleStatusChange} handleAssignEntregador={handleAssignEntregador} onSuccess={fetchPedidos} />
+      <KanbanColumn id="em_rota" title="Em Rota de Entrega" pedidos={pedidos.em_rota} entregadores={entregadores} handleStatusChange={handleStatusChange} handleAssignEntregador={handleAssignEntregador} onSuccess={fetchPedidos} />
+      <KanbanColumn id="entregue" title="Entregue" pedidos={pedidos.entregue} entregadores={entregadores} handleStatusChange={handleStatusChange} handleAssignEntregador={handleAssignEntregador} onSuccess={fetchPedidos} />
+      <KanbanColumn id="nao_entregue" title="Não Entregue" pedidos={pedidos.nao_entregue} entregadores={entregadores} handleStatusChange={handleStatusChange} handleAssignEntregador={handleAssignEntregador} onSuccess={fetchPedidos} />
     </div>
   );
 };

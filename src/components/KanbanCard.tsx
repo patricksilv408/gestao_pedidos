@@ -26,6 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from "@/utils/toast";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { PedidoDetalhesDialog } from "./PedidoDetalhesDialog";
 
 export type Pedido = {
   id: string;
@@ -51,6 +52,7 @@ interface KanbanCardProps {
   entregadores: UserProfile[];
   handleStatusChange: (pedido: Pedido, newStatus: Pedido['status']) => void;
   handleAssignEntregador: (pedido: Pedido, entregadorId: string | null) => void;
+  onSuccess: () => void;
 }
 
 const statusOptions: Pedido['status'][] = ['pendente', 'em_rota', 'entregue', 'nao_entregue'];
@@ -61,7 +63,7 @@ const statusLabels: Record<Pedido['status'], string> = {
   nao_entregue: 'Mover para Não Entregue',
 };
 
-export const KanbanCard = ({ pedido, entregadores, handleStatusChange, handleAssignEntregador }: KanbanCardProps) => {
+export const KanbanCard = ({ pedido, entregadores, handleStatusChange, handleAssignEntregador, onSuccess }: KanbanCardProps) => {
   const { profile } = useUser();
 
   const tempoDecorrido = formatDistanceToNow(new Date(pedido.criado_em), {
@@ -91,7 +93,9 @@ export const KanbanCard = ({ pedido, entregadores, handleStatusChange, handleAss
     return phone.replace(/\D/g, '');
   }
 
-  return (
+  const canEdit = profile?.role === 'admin' || profile?.role === 'gestor';
+
+  const cardComponent = (
     <Card className={cn("mb-4 flex flex-col", isDelayed && "border-red-500 border-2", pedido.status === 'nao_entregue' && "bg-red-50 border-red-200")}>
       <CardHeader>
         <div className="flex justify-between items-start">
@@ -223,5 +227,17 @@ export const KanbanCard = ({ pedido, entregadores, handleStatusChange, handleAss
         </CardFooter>
       )}
     </Card>
+  );
+
+  if (!canEdit) {
+    return cardComponent;
+  }
+
+  return (
+    <PedidoDetalhesDialog pedido={pedido} onSuccess={onSuccess}>
+      <div className="cursor-pointer">
+        {cardComponent}
+      </div>
+    </PedidoDetalhesDialog>
   );
 };

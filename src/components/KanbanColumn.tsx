@@ -8,9 +8,10 @@ interface KanbanColumnProps {
   entregadores: UserProfile[];
   handleStatusChange: (pedido: Pedido, newStatus: Pedido['status']) => void;
   handleAssignEntregador: (pedido: Pedido, entregadorId: string | null) => void;
+  onSuccess: () => void;
 }
 
-export const KanbanColumn = ({ id, title, pedidos, entregadores, handleStatusChange, handleAssignEntregador }: KanbanColumnProps) => {
+export const KanbanColumn = ({ id, title, pedidos, entregadores, handleStatusChange, handleAssignEntregador, onSuccess }: KanbanColumnProps) => {
   return (
     <div className="bg-gray-100 p-4 rounded-lg flex flex-col">
       <h2 className="text-lg font-bold mb-4 text-center">
@@ -24,6 +25,7 @@ export const KanbanColumn = ({ id, title, pedidos, entregadores, handleStatusCha
             entregadores={entregadores} 
             handleStatusChange={handleStatusChange}
             handleAssignEntregador={handleAssignEntregador} 
+            onSuccess={onSuccess}
           />
         ))}
       </div>
