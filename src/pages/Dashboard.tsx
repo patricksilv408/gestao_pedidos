@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { UserProfile } from "@/context/SessionProvider";
 import { Button } from "@/components/ui/button";
@@ -15,10 +15,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { DateRange } from "react-day-picker";
-import { format } from "date-fns";
+import { format, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Pedido } from "@/components/KanbanCard";
+import { EntregasPorEntregadorChart } from "@/components/EntregasPorEntregadorChart";
+import { EntregasPorEmpresaChart } from "@/components/EntregasPorEmpresaChart";
+import { EntregasAoLongoDoTempoChart } from "@/components/EntregasAoLongoDoTempoChart";
+
+const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#AF19FF", "#FF4560"];
 
 const Dashboard = () => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
@@ -26,53 +34,111 @@ const Dashboard = () => {
   const [selectedEmpresa, setSelectedEmpresa] = useState("todas");
   const [entregadores, setEntregadores] = useState<UserProfile[]>([]);
   const [empresas, setEmpresas] = useState<string[]>([]);
+  const [dashboardData, setDashboardData] = useState<Pedido[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchEntregadores = async () => {
-      const { data, error } = await supabase
+    const fetchFiltersData = async () => {
+      const { data: entregadoresData, error: entregadoresError } = await supabase
         .from("profiles")
         .select("*")
         .eq("role", "entregador");
-      if (error) {
-        console.error("Error fetching entregadores:", error);
-      } else {
-        setEntregadores(data || []);
-      }
-    };
-    fetchEntregadores();
-  }, []);
+      if (entregadoresError) console.error("Error fetching entregadores:", entregadoresError);
+      else setEntregadores(entregadoresData || []);
 
-  useEffect(() => {
-    const fetchEmpresas = async () => {
-      const { data, error } = await supabase.rpc("get_distinct_empresas");
-      if (error) {
-        console.error("Error fetching empresas:", error);
-      } else {
-        const empresaNames = data.map((item: { empresa: string }) => item.empresa);
+      const { data: empresasData, error: empresasError } = await supabase.rpc("get_distinct_empresas");
+      if (empresasError) console.error("Error fetching empresas:", empresasError);
+      else {
+        const empresaNames = empresasData.map((item: { empresa: string }) => item.empresa);
         setEmpresas(empresaNames || []);
       }
     };
-    fetchEmpresas();
+    fetchFiltersData();
   }, []);
 
-  return (
-    <div className="p-4 md:p-8">
-      <h1 className="text-2xl font-bold mb-6">Meu Dashboard</h1>
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setIsLoading(true);
+      let query = supabase.from("pedidos").select("*, entregador:profiles(full_name)");
 
-      <div className="flex flex-wrap items-center gap-4 p-4 border-b bg-gray-50 rounded-lg mb-6">
+      if (dateRange?.from) {
+        query = query.gte('criado_em', dateRange.from.toISOString());
+        const toDate = dateRange.to || dateRange.from;
+        query = query.lte('criado_em', endOfDay(toDate).toISOString());
+      }
+      if (selectedEntregador !== "todos") {
+        query = query.eq("entregador_id", selectedEntregador);
+      }
+      if (selectedEmpresa !== "todas") {
+        query = query.eq("empresa", selectedEmpresa);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        console.error("Error fetching dashboard data:", error);
+        setDashboardData([]);
+      } else {
+        setDashboardData(data as Pedido[] || []);
+      }
+      setIsLoading(false);
+    };
+
+    fetchDashboardData();
+  }, [dateRange, selectedEntregador, selectedEmpresa]);
+
+  const kpis = useMemo(() => {
+    return {
+      total: dashboardData.length,
+      pendentes: dashboardData.filter(p => p.status === 'pendente').length,
+      emRota: dashboardData.filter(p => p.status === 'em_rota').length,
+      entregues: dashboardData.filter(p => p.status === 'entregue').length,
+    };
+  }, [dashboardData]);
+
+  const chartData = useMemo(() => {
+    const entregas = dashboardData.filter(p => p.status === 'entregue');
+
+    const porEntregador = Object.entries(
+      entregas.reduce((acc, p) => {
+        const name = p.entregador?.full_name || 'Não Atribuído';
+        acc[name] = (acc[name] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)
+    ).map(([name, total]) => ({ name, total }));
+
+    const porEmpresa = Object.entries(
+      entregas.reduce((acc, p) => {
+        const name = p.empresa || 'Outras';
+        acc[name] = (acc[name] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)
+    ).map(([name, value], index) => ({ name, value, fill: COLORS[index % COLORS.length] }));
+
+    const aoLongoDoTempo = Object.entries(
+      entregas.reduce((acc, p) => {
+        const date = format(new Date(p.data_ultima_atualizacao), 'yyyy-MM-dd');
+        acc[date] = (acc[date] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)
+    )
+    .sort(([dateA], [dateB]) => new Date(dateA).getTime() - new Date(dateB).getTime())
+    .map(([date, total]) => ({ date: format(new Date(date), 'dd/MM'), total }));
+
+    return { porEntregador, porEmpresa, aoLongoDoTempo };
+  }, [dashboardData]);
+
+  return (
+    <div className="p-4 md:p-8 space-y-6">
+      <h1 className="text-2xl font-bold">Meu Dashboard</h1>
+
+      <div className="flex flex-wrap items-center gap-4 p-4 border bg-gray-50 rounded-lg">
         <Popover>
           <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className="w-[280px] justify-start text-left font-normal"
-            >
+            <Button variant={"outline"} className="w-full sm:w-[280px] justify-start text-left font-normal">
               <CalendarIcon className="mr-2 h-4 w-4" />
               {dateRange?.from ? (
                 dateRange.to ? (
-                  <>
-                    {format(dateRange.from, "dd/MM/y", { locale: ptBR })} -{" "}
-                    {format(dateRange.to, "dd/MM/y", { locale: ptBR })}
-                  </>
+                  <>{format(dateRange.from, "dd/MM/y", { locale: ptBR })} - {format(dateRange.to, "dd/MM/y", { locale: ptBR })}</>
                 ) : (
                   format(dateRange.from, "dd/MM/y", { locale: ptBR })
                 )
@@ -82,43 +148,65 @@ const Dashboard = () => {
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="range"
-              selected={dateRange}
-              onSelect={setDateRange}
-              initialFocus
-            />
+            <Calendar mode="range" selected={dateRange} onSelect={setDateRange} initialFocus />
           </PopoverContent>
         </Popover>
 
         <Select value={selectedEntregador} onValueChange={setSelectedEntregador}>
-          <SelectTrigger className="w-[220px]">
+          <SelectTrigger className="w-full sm:w-[220px]">
             <SelectValue placeholder="Filtrar por Entregador" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos Entregadores</SelectItem>
-            {entregadores.map((entregador) => (
-              <SelectItem key={entregador.id} value={entregador.id}>
-                {entregador.full_name}
-              </SelectItem>
-            ))}
+            {entregadores.map((e) => (<SelectItem key={e.id} value={e.id}>{e.full_name}</SelectItem>))}
           </SelectContent>
         </Select>
 
         <Select value={selectedEmpresa} onValueChange={setSelectedEmpresa}>
-          <SelectTrigger className="w-[220px]">
+          <SelectTrigger className="w-full sm:w-[220px]">
             <SelectValue placeholder="Filtrar por Empresa" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todas">Todas Empresas</SelectItem>
-            {empresas.map((empresa) => (
-              <SelectItem key={empresa} value={empresa}>
-                {empresa}
-              </SelectItem>
-            ))}
+            {empresas.map((e) => (<SelectItem key={e} value={e}>{e}</SelectItem>))}
           </SelectContent>
         </Select>
       </div>
+
+      {isLoading ? (
+        <div className="grid gap-4 md:grid-cols-4">
+          <Skeleton className="h-[120px]" />
+          <Skeleton className="h-[120px]" />
+          <Skeleton className="h-[120px]" />
+          <Skeleton className="h-[120px]" />
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card><CardHeader><CardTitle>Total de Pedidos</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{kpis.total}</div></CardContent></Card>
+          <Card><CardHeader><CardTitle>Pendentes</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{kpis.pendentes}</div></CardContent></Card>
+          <Card><CardHeader><CardTitle>Em Rota</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{kpis.emRota}</div></CardContent></Card>
+          <Card><CardHeader><CardTitle>Entregues</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{kpis.entregues}</div></CardContent></Card>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="grid gap-6 md:grid-cols-2">
+            <Skeleton className="h-[400px]" />
+            <Skeleton className="h-[400px]" />
+        </div>
+      ) : dashboardData.length > 0 ? (
+        <div className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+                <EntregasPorEntregadorChart data={chartData.porEntregador} />
+                <EntregasPorEmpresaChart data={chartData.porEmpresa} />
+            </div>
+            <EntregasAoLongoDoTempoChart data={chartData.aoLongoDoTempo} />
+        </div>
+      ) : (
+        <div className="text-center py-12 text-gray-500">
+            <p>Nenhum dado encontrado para os filtros selecionados.</p>
+        </div>
+      )}
     </div>
   );
 };
