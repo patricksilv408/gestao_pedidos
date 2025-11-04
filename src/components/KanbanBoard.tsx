@@ -203,16 +203,21 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
   };
 
   const handleAssignEntregador = async (pedido: Pedido, entregadorId: string | null) => {
+    const updateData = {
+      entregador_id: entregadorId,
+      status: entregadorId ? 'em_rota' : 'pendente' as PedidoStatus,
+    };
+
     const { error } = await supabase
         .from('pedidos')
-        .update({ entregador_id: entregadorId })
+        .update(updateData)
         .eq('id', pedido.id);
 
     if (error) {
         showError("Falha ao atribuir entregador.");
         console.error(error);
     } else {
-        showSuccess("Entregador atribuído com sucesso.");
+        showSuccess("Entregador atribuído e status atualizado.");
     }
   };
 
