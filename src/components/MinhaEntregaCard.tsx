@@ -16,8 +16,8 @@ export const MinhaEntregaCard = ({ pedido, onStatusChange, onSuccess }: MinhaEnt
     return (
         <Card className="w-full">
             <CardHeader>
-                <CardTitle>{pedido.cliente_nome}</CardTitle>
-                <CardDescription>{pedido.cliente_telefone}</CardDescription>
+                <CardTitle className="text-lg font-semibold">{pedido.cliente_nome}</CardTitle>
+                <CardDescription className="text-sm text-muted-foreground">{pedido.cliente_telefone}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
                 <div className="space-y-2 text-sm text-gray-600">
@@ -69,21 +69,21 @@ export const MinhaEntregaCard = ({ pedido, onStatusChange, onSuccess }: MinhaEnt
                     </Button>
                 </div>
             </CardContent>
-            <CardFooter className="flex items-center gap-2">
+            <CardFooter className="flex justify-end gap-2">
                 {pedido.status === 'pendente' && (
-                    <Button onClick={() => onStatusChange(pedido.id, 'em_rota')} className="flex-1">
+                    <Button onClick={() => onStatusChange(pedido.id, 'em_rota')}>
                         <PlayCircle className="w-4 h-4 mr-2" />
                         Iniciar Entrega
                     </Button>
                 )}
                 {pedido.status === 'em_rota' && (
                     <>
-                        <Button onClick={() => onStatusChange(pedido.id, 'entregue')} className="flex-1 bg-green-600 hover:bg-green-700">
+                        <Button onClick={() => onStatusChange(pedido.id, 'entregue')} className="bg-green-600 hover:bg-green-700">
                             <CheckCircle className="w-4 h-4 mr-2" />
                             Confirmar Entrega
                         </Button>
                         <NaoEntregueDialog pedidoId={pedido.id} onSuccess={onSuccess}>
-                            <Button variant="destructive" className="flex-1">
+                            <Button variant="destructive">
                                 <AlertTriangle className="w-4 h-4 mr-2" />
                                 Reportar Problema
                             </Button>

@@ -107,8 +107,8 @@ export const KanbanCard = ({ pedido, entregadores, handleStatusChange, handleAss
       <CardHeader>
         <div className="flex justify-between items-start">
           <div>
-            <CardTitle>{pedido.cliente_nome}</CardTitle>
-            <CardDescription>{pedido.cliente_telefone}</CardDescription>
+            <CardTitle className="text-lg font-semibold">{pedido.cliente_nome}</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">{pedido.cliente_telefone}</CardDescription>
           </div>
           {profile?.role === 'admin' && (
             <AlertDialog>
@@ -141,7 +141,7 @@ export const KanbanCard = ({ pedido, entregadores, handleStatusChange, handleAss
             <User className="w-4 h-4 mr-2 flex-shrink-0" />
             <span>{pedido.entregador?.full_name || "Não atribuído"}</span>
           </div>
-          <div className="flex flex-wrap gap-1 pt-1">
+          <div className="flex flex-wrap gap-1 mt-2">
             {pedido.bairro && <Badge variant="secondary">{pedido.bairro}</Badge>}
             {pedido.empresa && <Badge variant="outline">{pedido.empresa}</Badge>}
             {pedido.numero_vale && <Badge>Vale: {pedido.numero_vale}</Badge>}
