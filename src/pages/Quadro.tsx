@@ -17,8 +17,8 @@ const Quadro = () => {
   const [filterStatus, setFilterStatus] = useState("todos");
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      <div className="flex flex-wrap items-center gap-4 p-4 border-b bg-gray-50">
+    <div className="min-h-screen flex flex-col">
+      <div className="flex flex-wrap items-center gap-4 pt-4 px-4 pb-4 border-b bg-gray-50">
         <Input
           type="number"
           placeholder="Buscar por Nº do Vale"

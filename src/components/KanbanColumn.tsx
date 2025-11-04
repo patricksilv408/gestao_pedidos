@@ -13,7 +13,7 @@ interface KanbanColumnProps {
 
 export const KanbanColumn = ({ id, title, pedidos, entregadores, handleStatusChange, handleAssignEntregador, onSuccess }: KanbanColumnProps) => {
   return (
-    <div className="bg-gray-100 p-4 rounded-lg flex flex-col">
+    <div className="bg-secondary p-4 rounded-lg flex flex-col">
       <h2 className="text-lg font-bold mb-4 text-center">
         {title} ({pedidos.length})
       </h2>

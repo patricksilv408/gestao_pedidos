@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, differenceInHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -27,7 +28,6 @@ import { showSuccess, showError } from "@/utils/toast";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PedidoDetalhesDialog } from "./PedidoDetalhesDialog";
-import { Badge } from "@/components/ui/badge";
 
 export type Pedido = {
   id: string;
