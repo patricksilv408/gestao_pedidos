@@ -74,6 +74,7 @@ export const KanbanCard = ({ pedido, entregadores, handleStatusChange, handleAss
 
   const horasDesdeCriacao = differenceInHours(new Date(), new Date(pedido.criado_em));
   const isDelayed = horasDesdeCriacao > 24 && pedido.status !== 'entregue';
+  const isUrgente = horasDesdeCriacao > 1 && horasDesdeCriacao <= 24 && pedido.status === 'pendente';
 
   const handleDelete = async () => {
     const { error } = await supabase.from('pedidos').delete().eq('id', pedido.id);
@@ -97,7 +98,12 @@ export const KanbanCard = ({ pedido, entregadores, handleStatusChange, handleAss
   const canEdit = profile?.role === 'admin' || profile?.role === 'gestor';
 
   const cardComponent = (
-    <Card className={cn("mb-4 flex flex-col", isDelayed && "border-red-500 border-2", pedido.status === 'nao_entregue' && "bg-red-50 border-red-200")}>
+    <Card className={cn(
+      "mb-4 flex flex-col",
+      isDelayed && "border-red-500 border-2",
+      isUrgente && "border-yellow-500 border-2",
+      pedido.status === 'nao_entregue' && "bg-red-50 border-red-200"
+    )}>
       <CardHeader>
         <div className="flex justify-between items-start">
           <div>
