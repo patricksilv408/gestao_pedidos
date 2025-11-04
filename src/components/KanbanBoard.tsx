@@ -93,8 +93,64 @@ export const KanbanBoard = ({ searchTerm, filterBairro, filterTempo }: KanbanBoa
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'pedidos' },
-          () => {
-            fetchPedidos();
+          (payload) => {
+            setPedidos(currentPedidos => {
+              const newPedidosState = JSON.parse(JSON.stringify(currentPedidos));
+
+              switch (payload.eventType) {
+                case 'INSERT': {
+                  const newPedido = payload.new as Pedido;
+                  newPedido.entregador = null;
+                  const status = newPedido.status;
+                  if (newPedidosState[status]) {
+                    newPedidosState[status].push(newPedido);
+                  }
+                  break;
+                }
+                case 'UPDATE': {
+                  const updatedPedido = payload.new as Pedido;
+                  const oldStatus = (payload.old as Pedido)?.status;
+                  const newStatus = updatedPedido.status;
+
+                  if (updatedPedido.entregador_id) {
+                      const entregadorProfile = entregadores.find(e => e.id === updatedPedido.entregador_id);
+                      updatedPedido.entregador = entregadorProfile ? { id: entregadorProfile.id, full_name: entregadorProfile.full_name } : null;
+                  } else {
+                      updatedPedido.entregador = null;
+                  }
+
+                  if (oldStatus && newPedidosState[oldStatus]) {
+                    newPedidosState[oldStatus] = newPedidosState[oldStatus].filter((p: Pedido) => p.id !== updatedPedido.id);
+                  }
+                  
+                  if (newPedidosState[newStatus]) {
+                    const existingIndex = newPedidosState[newStatus].findIndex((p: Pedido) => p.id === updatedPedido.id);
+                    if (existingIndex > -1) {
+                      newPedidosState[newStatus][existingIndex] = updatedPedido;
+                    } else {
+                      newPedidosState[newStatus].push(updatedPedido);
+                    }
+                  }
+                  break;
+                }
+                case 'DELETE': {
+                  const deletedPedido = payload.old as Pedido;
+                  const status = deletedPedido.status;
+                  if (newPedidosState[status]) {
+                    newPedidosState[status] = newPedidosState[status].filter((p: Pedido) => p.id !== deletedPedido.id);
+                  }
+                  break;
+                }
+                default:
+                  break;
+              }
+              
+              Object.keys(newPedidosState).forEach(status => {
+                  newPedidosState[status as PedidoStatus].sort((a: Pedido, b: Pedido) => new Date(a.criado_em).getTime() - new Date(b.criado_em).getTime());
+              });
+
+              return newPedidosState;
+            });
           }
         )
         .subscribe();
@@ -103,16 +159,17 @@ export const KanbanBoard = ({ searchTerm, filterBairro, filterTempo }: KanbanBoa
         supabase.removeChannel(channel);
       };
     }
-  }, [profile, searchTerm, filterBairro, filterTempo]);
+  }, [profile, searchTerm, filterBairro, filterTempo, entregadores]);
 
   const handleStatusChange = async (pedido: Pedido, newStatus: PedidoStatus) => {
-    const oldPedidos = pedidos;
     const oldStatus = pedido.status;
 
     setPedidos(prev => {
       const newPedidosState = { ...prev };
       newPedidosState[oldStatus] = newPedidosState[oldStatus].filter(p => p.id !== pedido.id);
-      newPedidosState[newStatus] = [...newPedidosState[newStatus], { ...pedido, status: newStatus }];
+      const updatedList = [...newPedidosState[newStatus], { ...pedido, status: newStatus }];
+      updatedList.sort((a, b) => new Date(a.criado_em).getTime() - new Date(b.criado_em).getTime());
+      newPedidosState[newStatus] = updatedList;
       return newPedidosState;
     });
 
@@ -124,7 +181,14 @@ export const KanbanBoard = ({ searchTerm, filterBairro, filterTempo }: KanbanBoa
     if (error) {
       showError("Falha ao atualizar o status do pedido.");
       console.error(error);
-      setPedidos(oldPedidos);
+      // Revert state on error
+      setPedidos(prev => {
+        const revertedState = { ...prev };
+        revertedState[newStatus] = revertedState[newStatus].filter(p => p.id !== pedido.id);
+        revertedState[oldStatus] = [...revertedState[oldStatus], pedido];
+        revertedState[oldStatus].sort((a, b) => new Date(a.criado_em).getTime() - new Date(b.criado_em).getTime());
+        return revertedState;
+      });
     }
   };
 
