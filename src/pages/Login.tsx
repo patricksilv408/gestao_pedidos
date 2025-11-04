@@ -3,17 +3,9 @@ import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { useUser } from "@/context/SessionProvider";
 import { Navigate } from "react-router-dom";
-import { useEffect } from "react";
 
 const Login = () => {
   const { session, isLoading } = useUser();
-
-  useEffect(() => {
-    document.body.style.backgroundColor = "#f3f4f6";
-    return () => {
-      document.body.style.backgroundColor = "";
-    };
-  }, []);
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-screen">Carregando...</div>;
@@ -24,8 +16,11 @@ const Login = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
+    <div
+      className="min-h-screen bg-cover bg-center flex items-center justify-center p-4"
+      style={{ backgroundImage: "url('/login-bg.png')" }}
+    >
+      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-xl">
         <div className="text-center">
           <img src="/logo.png" alt="Logo" className="w-48 h-auto mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900">
