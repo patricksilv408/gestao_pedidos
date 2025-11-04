@@ -18,25 +18,26 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, UserPlus } from "lucide-react";
 import { showError } from "@/utils/toast";
+import { UserEditDialog } from "@/components/UserEditDialog";
 
 const Usuarios = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchUsers = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from("profiles").select("*");
+
+    if (error) {
+      showError("Falha ao buscar usuários.");
+      console.error(error);
+    } else {
+      setUsers(data || []);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const fetchUsers = async () => {
-      setLoading(true);
-      const { data, error } = await supabase.from("profiles").select("*");
-
-      if (error) {
-        showError("Falha ao buscar usuários.");
-        console.error(error);
-      } else {
-        setUsers(data || []);
-      }
-      setLoading(false);
-    };
-
     fetchUsers();
   }, []);
 
@@ -44,10 +45,12 @@ const Usuarios = () => {
     <div className="p-4 md:p-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Gestão de Usuários</h1>
-        <Button>
-          <UserPlus className="w-4 h-4 mr-2" />
-          Adicionar Usuário
-        </Button>
+        <UserEditDialog onSuccess={fetchUsers}>
+          <Button>
+            <UserPlus className="w-4 h-4 mr-2" />
+            Adicionar Usuário
+          </Button>
+        </UserEditDialog>
       </div>
 
       {loading ? (
@@ -76,9 +79,11 @@ const Usuarios = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          Editar
-                        </DropdownMenuItem>
+                        <UserEditDialog user={user} onSuccess={fetchUsers}>
+                          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                            Editar
+                          </DropdownMenuItem>
+                        </UserEditDialog>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

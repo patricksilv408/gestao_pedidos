@@ -150,7 +150,7 @@ export const KanbanCard = ({ pedido, entregadores, handleStatusChange }: KanbanC
 
         {(profile?.role === 'admin' || profile?.role === 'gestor') && (
           <div className="mb-4">
-            <Select onValueChange={handleAssign} defaultValue={pedido.entregador_id || ""}>
+            <Select onValueChange={handleAssign} defaultValue={pedido.entregador_id || undefined}>
               <SelectTrigger>
                 <UserPlus className="w-4 h-4 mr-2 text-gray-500" />
                 <SelectValue placeholder="Atribuir entregador" />
