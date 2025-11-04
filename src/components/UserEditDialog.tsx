@@ -34,13 +34,15 @@ import { UserProfile } from "@/context/SessionProvider";
 const formSchema = z.object({
   full_name: z.string().min(2, "O nome deve ter pelo menos 2 caracteres."),
   role: z.enum(["admin", "gestor", "entregador"]),
-  email: z.string().email("Email inválido.").optional(),
-  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres.").optional(),
+  email: z.string().email("Email inválido.").optional().or(z.literal('')),
+  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres.").optional().or(z.literal('')),
 }).refine(data => {
+    // Se não for modo de edição (ou seja, é criação), email e senha são obrigatórios
+    if (!data.email && !data.password) return true; // Permite edição sem alterar email/senha
     if (data.email && !data.password) return false;
     return true;
 }, {
-    message: "A senha é obrigatória ao criar um novo usuário.",
+    message: "A senha é obrigatória ao criar um novo usuário com email.",
     path: ["password"],
 });
 
@@ -65,18 +67,22 @@ export const UserEditDialog = ({ user, children, onSuccess }: UserEditDialogProp
   });
 
   useEffect(() => {
-    if (user) {
-      form.reset({
-        full_name: user.full_name,
-        role: user.role,
-      });
-    } else {
-      form.reset({
-        full_name: "",
-        role: "entregador",
-        email: "",
-        password: "",
-      });
+    if (open) {
+      if (user) {
+        form.reset({
+          full_name: user.full_name,
+          role: user.role,
+          email: '',
+          password: ''
+        });
+      } else {
+        form.reset({
+          full_name: "",
+          role: "entregador",
+          email: "",
+          password: "",
+        });
+      }
     }
   }, [user, form, open]);
 
