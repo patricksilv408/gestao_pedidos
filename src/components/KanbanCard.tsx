@@ -172,6 +172,12 @@ export const KanbanCard = ({ pedido, entregadores, handleStatusChange, handleAss
           </div>
         </div>
 
+        {pedido.motivo_nao_entrega && pedido.status === 'pendente' && (
+          <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-xs">
+            <span className="font-bold">Falha na Entrega:</span> {pedido.motivo_nao_entrega}
+          </div>
+        )}
+
         {pedido.status === 'nao_entregue' && pedido.motivo_nao_entrega && (
           <div className="mb-4">
             <p className="text-sm font-medium text-red-600 flex items-center">

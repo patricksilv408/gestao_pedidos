@@ -49,7 +49,7 @@ export const NaoEntregueDialog = ({ pedidoId, children, onSuccess }: NaoEntregue
     const { error } = await supabase
       .from("pedidos")
       .update({
-        status: "nao_entregue",
+        status: "pendente",
         motivo_nao_entrega: values.motivo,
       })
       .eq("id", pedidoId);
@@ -58,7 +58,7 @@ export const NaoEntregueDialog = ({ pedidoId, children, onSuccess }: NaoEntregue
       showError("Falha ao reportar o problema.");
       console.error(error);
     } else {
-      showSuccess("Problema reportado com sucesso!");
+      showSuccess("Problema reportado! O pedido voltou para a coluna Pendente.");
       form.reset();
       onSuccess();
       setOpen(false);
@@ -72,7 +72,7 @@ export const NaoEntregueDialog = ({ pedidoId, children, onSuccess }: NaoEntregue
         <DialogHeader>
           <DialogTitle>Reportar Problema na Entrega</DialogTitle>
           <DialogDescription>
-            Descreva o motivo pelo qual a entrega não pôde ser concluída. O pedido será movido para a coluna "Não Entregue".
+            Descreva o motivo pelo qual a entrega não pôde ser concluída. O pedido será movido de volta para a coluna "Pendente".
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

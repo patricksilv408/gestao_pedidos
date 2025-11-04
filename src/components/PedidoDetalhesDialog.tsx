@@ -34,6 +34,7 @@ const formSchema = z.object({
   }),
   bairro: z.string().optional().transform(val => val || null),
   pedidos: z.string().optional().transform(val => val || null),
+  motivo_nao_entrega: z.string().optional().transform(val => val || null),
 });
 
 interface PedidoDetalhesDialogProps {
@@ -51,6 +52,7 @@ export const PedidoDetalhesDialog = ({ pedido, children, onSuccess }: PedidoDeta
       cliente_telefone: "",
       bairro: "",
       pedidos: "",
+      motivo_nao_entrega: "",
     },
   });
 
@@ -61,6 +63,7 @@ export const PedidoDetalhesDialog = ({ pedido, children, onSuccess }: PedidoDeta
         cliente_telefone: pedido.cliente_telefone,
         bairro: pedido.bairro || "",
         pedidos: pedido.pedidos || "",
+        motivo_nao_entrega: pedido.motivo_nao_entrega || "",
       });
     }
   }, [open, pedido, form]);
@@ -147,6 +150,26 @@ export const PedidoDetalhesDialog = ({ pedido, children, onSuccess }: PedidoDeta
                 </FormItem>
               )}
             />
+            {pedido.motivo_nao_entrega && (
+              <FormField
+                control={form.control}
+                name="motivo_nao_entrega"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Motivo da Falha na Entrega (limpe para remover)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Motivo da última falha na entrega..."
+                        className="resize-none bg-red-50"
+                        {...field}
+                        value={field.value ?? ''}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <DialogFooter>
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? "Salvando..." : "Salvar Alterações"}
