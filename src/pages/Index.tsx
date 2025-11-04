@@ -18,6 +18,7 @@ const Index = () => {
     <div className="min-h-screen bg-white flex flex-col">
       <div className="flex flex-wrap items-center gap-4 p-4 border-b bg-gray-50">
         <Input
+          type="number"
           placeholder="Buscar por Nº do Vale"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}

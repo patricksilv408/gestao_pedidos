@@ -53,7 +53,15 @@ export const KanbanBoard = ({ searchTerm, searchAddress, filterTempo }: KanbanBo
           .select("*, entregador:profiles(id, full_name)");
 
         if (searchTerm) {
-          query = query.eq('numero_vale', searchTerm);
+          const valeNumber = parseInt(searchTerm, 10);
+          if (!isNaN(valeNumber)) {
+            query = query.eq('numero_vale', valeNumber);
+          } else {
+            // Se o termo de busca não for um número válido, não retorna nada
+            setPedidos({ pendente: [], em_rota: [], entregue: [] });
+            setLoading(false);
+            return;
+          }
         } else {
           if (searchAddress) {
             query = query.ilike('bairro', `%${searchAddress}%`);
