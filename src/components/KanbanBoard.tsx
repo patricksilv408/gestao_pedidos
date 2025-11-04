@@ -100,7 +100,12 @@ export const KanbanBoard = ({ searchTerm, filterBairro, filterTempo }: KanbanBoa
               switch (payload.eventType) {
                 case 'INSERT': {
                   const newPedido = payload.new as Pedido;
-                  newPedido.entregador = null;
+                  if (newPedido.entregador_id) {
+                    const entregadorProfile = entregadores.find(e => e.id === newPedido.entregador_id);
+                    newPedido.entregador = entregadorProfile ? { id: entregadorProfile.id, full_name: entregadorProfile.full_name } : null;
+                  } else {
+                    newPedido.entregador = null;
+                  }
                   const status = newPedido.status;
                   if (newPedidosState[status]) {
                     newPedidosState[status].push(newPedido);
@@ -162,17 +167,6 @@ export const KanbanBoard = ({ searchTerm, filterBairro, filterTempo }: KanbanBoa
   }, [profile, searchTerm, filterBairro, filterTempo, entregadores]);
 
   const handleStatusChange = async (pedido: Pedido, newStatus: PedidoStatus) => {
-    const oldStatus = pedido.status;
-
-    setPedidos(prev => {
-      const newPedidosState = { ...prev };
-      newPedidosState[oldStatus] = newPedidosState[oldStatus].filter(p => p.id !== pedido.id);
-      const updatedList = [...newPedidosState[newStatus], { ...pedido, status: newStatus }];
-      updatedList.sort((a, b) => new Date(a.criado_em).getTime() - new Date(b.criado_em).getTime());
-      newPedidosState[newStatus] = updatedList;
-      return newPedidosState;
-    });
-
     const { error } = await supabase
       .from('pedidos')
       .update({ status: newStatus })
@@ -181,14 +175,6 @@ export const KanbanBoard = ({ searchTerm, filterBairro, filterTempo }: KanbanBoa
     if (error) {
       showError("Falha ao atualizar o status do pedido.");
       console.error(error);
-      // Revert state on error
-      setPedidos(prev => {
-        const revertedState = { ...prev };
-        revertedState[newStatus] = revertedState[newStatus].filter(p => p.id !== pedido.id);
-        revertedState[oldStatus] = [...revertedState[oldStatus], pedido];
-        revertedState[oldStatus].sort((a, b) => new Date(a.criado_em).getTime() - new Date(b.criado_em).getTime());
-        return revertedState;
-      });
     }
   };
 
