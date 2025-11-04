@@ -24,29 +24,36 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      try {
-        setSession(session);
+    const fetchSessionAndProfile = async (session: Session | null) => {
+      setSession(session);
+      
+      if (session?.user) {
+        const { data: userProfile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
         
-        if (session?.user) {
-          const { data: userProfile, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (error) {
-            console.error("Error fetching profile on auth state change:", error);
-            setProfile(null);
-          } else {
-            setProfile(userProfile);
-          }
-        } else {
+        if (error) {
+          console.error("Error fetching profile:", error);
           setProfile(null);
+        } else {
+          setProfile(userProfile);
         }
-      } finally {
-        setIsLoading(false);
+      } else {
+        setProfile(null);
       }
+      setIsLoading(false);
+    };
+
+    // Trata o carregamento da sessão inicial para garantir que o estado de carregamento seja resolvido.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      fetchSessionAndProfile(session);
+    });
+
+    // Ouve por mudanças subsequentes na autenticação (login/logout).
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      fetchSessionAndProfile(session);
     });
 
     return () => subscription.unsubscribe();
