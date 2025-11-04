@@ -13,9 +13,10 @@ interface KanbanBoardProps {
   searchPhone: string;
   searchAddress: string;
   filterTempo: string;
+  filterStatus: string;
 }
 
-export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTempo }: KanbanBoardProps) => {
+export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTempo, filterStatus }: KanbanBoardProps) => {
   const { profile } = useUser();
   const [pedidos, setPedidos] = useState<PedidosPorStatus>({
     pendente: [],
@@ -51,7 +52,6 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
       } else {
         if (searchAddress) {
           query = query.ilike('bairro', `%${searchAddress}%`);
-          query = query.in('status', ['pendente', 'em_rota', 'nao_entregue']);
         }
 
         if (filterTempo === 'atrasados') {
@@ -63,6 +63,10 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
         } else if (filterTempo === 'recentes') {
           const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
           query = query.gte('criado_em', twentyFourHoursAgo);
+        }
+
+        if (filterStatus !== 'todos') {
+          query = query.eq('status', filterStatus);
         }
       }
 
@@ -88,7 +92,7 @@ export const KanbanBoard = ({ searchTerm, searchPhone, searchAddress, filterTemp
     } finally {
       setLoading(false);
     }
-  }, [profile, searchTerm, searchPhone, searchAddress, filterTempo]);
+  }, [profile, searchTerm, searchPhone, searchAddress, filterTempo, filterStatus]);
 
   useEffect(() => {
     if (profile && (profile.role === 'admin' || profile.role === 'gestor')) {

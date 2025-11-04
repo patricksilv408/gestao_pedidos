@@ -14,6 +14,7 @@ const Quadro = () => {
   const [searchPhone, setSearchPhone] = useState("");
   const [searchAddress, setSearchAddress] = useState("");
   const [filterTempo, setFilterTempo] = useState("todos");
+  const [filterStatus, setFilterStatus] = useState("todos");
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -53,6 +54,22 @@ const Quadro = () => {
             <SelectItem value="recentes">Recentes (&lt; 24h)</SelectItem>
           </SelectContent>
         </Select>
+        <Select
+          value={filterStatus}
+          onValueChange={setFilterStatus}
+          disabled={!!searchTerm || !!searchPhone}
+        >
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Filtrar por status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os Status</SelectItem>
+            <SelectItem value="pendente">Pendente</SelectItem>
+            <SelectItem value="em_rota">Em Rota</SelectItem>
+            <SelectItem value="entregue">Entregue</SelectItem>
+            <SelectItem value="nao_entregue">Não Entregue</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <main className="flex-grow overflow-auto">
         <KanbanBoard
@@ -60,6 +77,7 @@ const Quadro = () => {
           searchPhone={searchPhone}
           searchAddress={searchAddress}
           filterTempo={filterTempo}
+          filterStatus={filterStatus}
         />
       </main>
     </div>
