@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Package, Clock, Truck, CheckCircle } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { format, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -190,11 +190,47 @@ const Dashboard = () => {
       ) : dashboardData.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-3">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card><CardHeader><CardTitle>Total de Pedidos</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{kpis.total}</div></CardContent></Card>
-              <Card><CardHeader><CardTitle>Pendentes</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{kpis.pendentes}</div></CardContent></Card>
-              <Card><CardHeader><CardTitle>Em Rota</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{kpis.emRota}</div></CardContent></Card>
-              <Card><CardHeader><CardTitle>Entregues</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{kpis.entregues}</div></CardContent></Card>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total de Pedidos</CardTitle>
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{kpis.total}</div>
+                  <p className="text-xs text-muted-foreground">Total de pedidos no período</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{kpis.pendentes}</div>
+                  <p className="text-xs text-muted-foreground">Pedidos aguardando rota</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Em Rota</CardTitle>
+                  <Truck className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{kpis.emRota}</div>
+                  <p className="text-xs text-muted-foreground">Pedidos em rota de entrega</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Entregues</CardTitle>
+                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{kpis.entregues}</div>
+                  <p className="text-xs text-muted-foreground">Pedidos entregues com sucesso</p>
+                </CardContent>
+              </Card>
             </div>
           </div>
           
