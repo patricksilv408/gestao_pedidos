@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import { SessionProvider } from "./context/SessionProvider";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Usuarios from "./pages/Usuarios";
+import MinhasEntregas from "./pages/MinhasEntregas";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Index />} />
               <Route path="/usuarios" element={<Usuarios />} />
+              <Route path="/minhas-entregas" element={<MinhasEntregas />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

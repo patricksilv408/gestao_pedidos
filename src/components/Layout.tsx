@@ -21,16 +21,61 @@ import { Button } from "@/components/ui/button";
 import { useUser } from "@/context/SessionProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { LayoutGrid, LogOut, Users } from "lucide-react";
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useLocation, Navigate } from "react-router-dom";
 import { NewOrderDialog } from "./NewOrderDialog";
 
 const Layout = () => {
   const { profile } = useUser();
+  const location = useLocation();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
 
+  // Layout específico para Entregador
+  if (profile?.role === 'entregador') {
+    if (location.pathname !== '/minhas-entregas') {
+      return <Navigate to="/minhas-entregas" replace />;
+    }
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="flex justify-between items-center p-4 border-b bg-white shadow-sm sticky top-0 z-10">
+          <img src="/logo.png" alt="Logo" className="w-24 h-auto" />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="p-2 h-auto">
+                <div className="flex items-center">
+                  <Avatar className="w-8 h-8 mr-2">
+                    <AvatarImage src={profile?.avatar_url} />
+                    <AvatarFallback>
+                      {profile?.full_name?.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="truncate hidden sm:inline">{profile?.full_name}</span>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </header>
+        <main>
+          <Outlet />
+        </main>
+      </div>
+    );
+  }
+
+  // Redireciona admin/gestor se tentarem acessar a página de entregas
+  if (profile && location.pathname === '/minhas-entregas') {
+    return <Navigate to="/" replace />;
+  }
+
+  // Layout padrão para Admin/Gestor
   return (
     <SidebarProvider>
       <Sidebar>
